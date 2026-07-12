@@ -1,0 +1,2 @@
+-- SUPERSEDED: replaced by 0001_alie_init.sql
+-- This file is intentionally empty. Do not run.

@@ -1,0 +1,2 @@
+-- SUPERSEDED: replaced by 0002_alie_countdown_links.sql
+-- This file is intentionally empty. Do not run.
