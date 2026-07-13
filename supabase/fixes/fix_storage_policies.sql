@@ -29,6 +29,21 @@ as $$
   );
 $$;
 
+-- ── 1b. Ensure the bucket exists with server-side limits ───────────────────
+-- 8 MB cap + images only, enforced by Storage itself (defense in depth
+-- against anything that bypasses the admin UI's client-side optimizer).
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+  values (
+    'alie-media', 'alie-media', true,
+    8388608, -- 8 MB
+    array['image/jpeg','image/png','image/webp','image/gif','image/avif','image/svg+xml']
+  )
+  on conflict (id) do update
+    set public             = true,
+        file_size_limit    = excluded.file_size_limit,
+        allowed_mime_types = excluded.allowed_mime_types;
+
 -- ── 2. Replace storage policies ─────────────────────────────────────────────
 
 drop policy if exists "alie_media bucket: public read"   on storage.objects;
@@ -62,19 +77,4 @@ create policy "alie_media bucket: admin update"
     and (select role from public.alie_profiles where id = auth.uid()) = 'admin'
   );
 
-create policy "alie_media bucket: admin delete"
-  on storage.objects for delete
-  to authenticated
-  using (
-    bucket_id = 'alie-media'
-    and (select role from public.alie_profiles where id = auth.uid()) = 'admin'
-  );
-
--- ── 3. Verify ───────────────────────────────────────────────────────────────
--- After running the above, execute the two lines below to confirm the policies
--- are in place (you should see 4 rows: public read + 3 admin rows).
---
--- select policyname, cmd, roles
--- from pg_policies
--- where tablename = 'objects' and schemaname = 'storage'
---   and policyname like 'alie_media%';
+create policy "alie_media bucket: admin dele

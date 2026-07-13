@@ -371,9 +371,17 @@ create policy "alie_activity_logs: admin insert" on alie_activity_logs for inser
 -- 5. STORAGE BUCKET
 -- ============================================================
 
-insert into storage.buckets (id, name, public)
-  values ('alie-media', 'alie-media', true)
-  on conflict (id) do nothing;
+-- 8 MB server-side cap + images only. The client optimizes to well under this;
+-- the bucket enforces it against anything that bypasses the admin UI.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+  values (
+    'alie-media', 'alie-media', true,
+    8388608, -- 8 MB
+    array['image/jpeg','image/png','image/webp','image/gif','image/avif','image/svg+xml']
+  )
+  on conflict (id) do update
+    set file_size_limit    = excluded.file_size_limit,
+        allowed_mime_types = excluded.allowed_mime_types;
 
 -- ============================================================
 -- 6. STORAGE POLICIES
@@ -403,18 +411,4 @@ create policy "alie_media bucket: admin update"
   using (
     bucket_id = 'alie-media'
     and (select role from public.alie_profiles where id = auth.uid()) = 'admin'
-  );
-
-create policy "alie_media bucket: admin delete"
-  on storage.objects for delete
-  to authenticated
-  using (
-    bucket_id = 'alie-media'
-    and (select role from public.alie_profiles where id = auth.uid()) = 'admin'
-  );
-
--- ============================================================
--- 7. SEED DATA
--- ============================================================
-
-insert into alie_homepage_sections (section_ke
+  
