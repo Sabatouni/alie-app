@@ -4,15 +4,17 @@ Manual steps only. Everything the code can do automatically, it already does.
 
 ## 1. Supabase project
 
-- [ ] Create a new project at supabase.com.
-- [ ] In the SQL Editor, run the four migrations **in order**:
-  1. `supabase/migrations/0001_init.sql`
-  2. `supabase/migrations/0002_countdown_links.sql`
-  3. `supabase/migrations/0003_product_seo.sql`
-  4. `supabase/migrations/0004_alie_namespace_rename.sql` — renames every table/function/policy
-     to the `alie_` namespace and renames the storage bucket to `alie-media`. Must run last.
-- [ ] Confirm the `alie-media` storage bucket exists (Storage tab) — created as `media` by migration
-      0001, then renamed to `alie-media` by migration 0004. Public read, admin-only write.
+- [ ] Create a new project at supabase.com (or use the existing shared project).
+- [ ] In the SQL Editor, run the three migrations **in order**:
+  1. `supabase/migrations/0001_alie_init.sql` — all tables, `alie_is_admin()`, RLS, the
+     `alie-media` bucket, and storage policies, everything already in the `alie_` namespace.
+  2. `supabase/migrations/0002_alie_countdown_links.sql`
+  3. `supabase/migrations/0003_alie_product_seo.sql`
+- [ ] **Existing deployments only:** if the project was set up before the storage-policy fix,
+      run `supabase/fixes/fix_storage_policies.sql` once — it recreates `alie_is_admin()` with
+      `set search_path = public` and rebuilds the four `storage.objects` policies. Without it,
+      admin image uploads fail with a schema/policy 400 error.
+- [ ] Confirm the `alie-media` storage bucket exists (Storage tab). Public read, admin-only write.
 - [ ] Copy your Project URL and anon public key (Settings → API).
 
 ## 2. First admin account
@@ -65,7 +67,4 @@ Manual steps only. Everything the code can do automatically, it already does.
 
 These are documented, working-as-designed simplifications, not bugs:
 
-- Product colours/sizes (`alie_product_variants`) and multiple images (`alie_product_images`) are created directly in Supabase for now, not yet from the admin Products form — that form covers the core product fields only.
-- Image fields across the admin take a pasted Media Library URL, not an inline picker.
-- Homepage section reordering is up/down buttons, not drag-and-drop.
-- Journal body is plain text, not a rich editor.
+- Product colours/sizes (`alie_product_variants`) and multiple images (`alie_product_images`) are created directly in Supabase for now, not yet from the admin Products form —

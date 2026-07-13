@@ -1,2 +1,0 @@
--- SUPERSEDED: replaced by 0003_alie_product_seo.sql
--- This file is intentionally empty. Do not run.

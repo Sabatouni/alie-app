@@ -241,11 +241,17 @@ create or replace function alie_is_admin()
 returns boolean
 language sql
 security definer
+-- Explicit search_path is required for SECURITY DEFINER functions.
+-- Without it, Supabase Storage's RLS evaluator may not have 'public' in
+-- its search_path, which causes the unqualified 'alie_profiles' reference
+-- to fail with a 400 / schema-not-found error.
+set search_path = public
 stable
 as $$
   select exists (
-    select 1 from alie_profiles
-    where alie_profiles.id = auth.uid() and alie_profiles.role = 'admin'
+    select 1 from public.alie_profiles
+    where public.alie_profiles.id = auth.uid()
+      and public.alie_profiles.role = 'admin'
   );
 $$;
 
@@ -373,23 +379,42 @@ insert into storage.buckets (id, name, public)
 -- 6. STORAGE POLICIES
 -- ============================================================
 
-create policy "alie_media bucket: public read"   on storage.objects for select using (bucket_id = 'alie-media');
-create policy "alie_media bucket: admin write"   on storage.objects for insert with check (bucket_id = 'alie-media' and alie_is_admin());
-create policy "alie_media bucket: admin update"  on storage.objects for update using  (bucket_id = 'alie-media' and alie_is_admin());
-create policy "alie_media bucket: admin delete"  on storage.objects for delete using  (bucket_id = 'alie-media' and alie_is_admin());
+-- Public read — anyone can fetch images (bucket is already public, but policy makes it explicit)
+create policy "alie_media bucket: public read"
+  on storage.objects for select
+  using (bucket_id = 'alie-media');
+
+-- Admin write / update / delete — restrict to authenticated admins.
+-- The `to authenticated` role filter prevents unauthenticated requests from
+-- even reaching the policy predicate; the subquery then confirms admin status.
+-- We inline the subquery rather than calling public.alie_is_admin() to avoid
+-- any residual search_path ambiguity in the Storage service's RLS evaluator.
+create policy "alie_media bucket: admin write"
+  on storage.objects for insert
+  to authenticated
+  with check (
+    bucket_id = 'alie-media'
+    and (select role from public.alie_profiles where id = auth.uid()) = 'admin'
+  );
+
+create policy "alie_media bucket: admin update"
+  on storage.objects for update
+  to authenticated
+  using (
+    bucket_id = 'alie-media'
+    and (select role from public.alie_profiles where id = auth.uid()) = 'admin'
+  );
+
+create policy "alie_media bucket: admin delete"
+  on storage.objects for delete
+  to authenticated
+  using (
+    bucket_id = 'alie-media'
+    and (select role from public.alie_profiles where id = auth.uid()) = 'admin'
+  );
 
 -- ============================================================
 -- 7. SEED DATA
 -- ============================================================
 
-insert into alie_homepage_sections (section_key, title, subtitle, sort_order, content) values
-  ('hero',                'ALIE',                                                           'The Essential Collection',                    0, '{"body":"Linen and cotton, cut for movement and refined ease. Made to be worn, not styled.","cta_label":"Explore the Collection"}'::jsonb),
-  ('featured_collection', 'The Essential Collection',                                       'Eleven pieces built for years, not seasons.', 1, '{}'::jsonb),
-  ('arrivals',            'This week''s pieces',                                            'Everyday Linen',                              2, '{}'::jsonb),
-  ('philosophy',          'We make fewer things, cut to move with you and built to last.',  'Brand Philosophy',                            3, '{}'::jsonb)
-on conflict (section_key) do nothing;
-
-insert into alie_site_settings (key, value) values
-  ('brand',  '{"name":"ALIE","founded_in":"Zanzibar","whatsapp_number":""}'::jsonb),
-  ('social', '{"instagram":"","whatsapp":"","pinterest":""}'::jsonb)
-on conflict (key) do nothing;
+insert into alie_homepage_sections (section_ke

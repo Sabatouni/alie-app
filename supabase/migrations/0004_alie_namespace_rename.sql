@@ -1,3 +1,0 @@
--- SUPERSEDED: alie_ namespace is now the original schema (see 0001_alie_init.sql).
--- The rename migration is no longer needed for greenfield deployments.
--- This file is intentionally empty. Do not run.
