@@ -1,39 +1,57 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import ImageSlot from './ImageSlot';
 
-// Drop this anywhere with a locationKey ('homepage_hero', 'homepage_below_arrivals',
-// 'collection_page', 'product_page', 'event_page'). If no admin-enabled countdown targets
-// that location, this renders null — the layout closes up as if the block never existed.
+// Drop this anywhere with a locationKey. If no admin-enabled countdown targets
+// that location, it renders null — no wrapper, no padding, no empty section.
+// Parents must not wrap it in a spaced container for the same reason.
+//
+// The completion CTA used to build `/product/${countdown.product_id}`, which is
+// a UUID; the product route matches on slug, so every finished countdown linked
+// to a dead URL. The linked row's slug is now resolved before rendering.
+
 export default function CountdownBlock({ locationKey }) {
   const [countdown, setCountdown] = useState(null);
+  const [target, setTarget] = useState(null); // { href } | null
   const [remaining, setRemaining] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase
-      .from('alie_countdowns')
-      .select('*')
-      .eq('is_enabled', true)
-      .eq('location_key', locationKey)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .then(({ data }) => {
-        setCountdown(data?.[0] || null);
-        setLoading(false);
-      });
+    let cancelled = false;
+
+    async function load() {
+      const { data } = await supabase
+        .from('alie_countdowns')
+        .select('*')
+        .eq('is_enabled', true)
+        .eq('location_key', locationKey)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      const row = data?.[0] || null;
+      if (cancelled) return;
+      setCountdown(row);
+      if (!row) { setTarget(null); return; }
+
+      const resolved = await resolveTarget(row);
+      if (!cancelled) setTarget(resolved);
+    }
+
+    load();
+    return () => { cancelled = true; };
   }, [locationKey]);
 
   useEffect(() => {
-    if (!countdown) return;
-    const target = new Date(countdown.target_at).getTime();
-    const tick = () => setRemaining(Math.max(0, target - Date.now()));
+    if (!countdown) { setRemaining(null); return; }
+    const at = new Date(countdown.target_at).getTime();
+    const tick = () => setRemaining(Math.max(0, at - Date.now()));
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [countdown]);
 
-  if (loading || !countdown) return null;
+  // Nothing at all until a countdown is both found and ticking.
+  if (!countdown || remaining === null) return null;
 
   const done = remaining === 0;
   const pad = (n) => String(n).padStart(2, '0');
@@ -46,7 +64,7 @@ export default function CountdownBlock({ locationKey }) {
     <section className="relative bg-smoke text-paper py-28 md:py-36 px-6 text-center overflow-hidden">
       {countdown.banner_image_url && (
         <div className="absolute inset-0 opacity-25">
-          <ImageSlot src={countdown.banner_image_url} tone="mist" />
+          <ImageSlot src={countdown.banner_image_url} alt="" tone="mist" sizes="100vw" />
         </div>
       )}
       <div className="relative z-10">
@@ -64,18 +82,39 @@ export default function CountdownBlock({ locationKey }) {
           </div>
         ) : (
           <div className="mt-14">
-            <a
-              href={
-                countdown.product_id ? `/product/${countdown.product_id}` :
-                countdown.collection_id ? `/collections/${countdown.collection_id}` : '#'
-              }
-              className="inline-block text-xs tracking-[0.18em] uppercase border border-paper px-9 py-4 hover:bg-paper hover:text-smoke transition-colors"
-            >
-              {countdown.completion_message || 'Now Available'}
-            </a>
+            {target ? (
+              <Link
+                to={target.href}
+                className="inline-block text-xs tracking-[0.18em] uppercase border border-paper px-9 py-4 hover:bg-paper hover:text-smoke transition-colors"
+              >
+                {countdown.completion_message || 'Now Available'}
+              </Link>
+            ) : (
+              // No reachable target: show the message as text rather than a dead link.
+              <span className="inline-block text-xs tracking-[0.18em] uppercase border border-paper/40 px-9 py-4 text-paper/70">
+                {countdown.completion_message || 'Now Available'}
+              </span>
+            )}
           </div>
         )}
       </div>
     </section>
   );
+}
+
+// Countdowns can point at a product, collection, event or collaboration. Only
+// products and collections have public detail routes; the other two link to
+// their index page.
+async function resolveTarget(row) {
+  if (row.product_id) {
+    const { data } = await supabase.from('alie_products').select('slug, status').eq('id', row.product_id).maybeSingle();
+    return data?.slug && data.status === 'published' ? { href: `/product/${data.slug}` } : null;
+  }
+  if (row.collection_id) {
+    const { data } = await supabase.from('alie_collections').select('slug, is_active').eq('id', row.collection_id).maybeSingle();
+    return data?.slug && data.is_active ? { href: `/collections/${data.slug}` } : null;
+  }
+  if (row.event_id) return { href: '/events' };
+  if (row.collaboration_id) return { href: '/collaborations' };
+  return null;
 }

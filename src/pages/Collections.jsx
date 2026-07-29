@@ -1,60 +1,116 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
+import { useSettings } from '../context/SettingsContext';
 import ProductCard from '../components/ProductCard';
 import CountdownBlock from '../components/CountdownBlock';
+import { setMeta } from '../lib/seo';
+
+const SELECT = '*, product_images:alie_product_images(*), product_variants:alie_product_variants(*), collections:alie_collections(name,slug)';
 
 export default function Collections() {
   const { slug } = useParams();
+  const { brand } = useSettings();
   const [products, setProducts] = useState([]);
+  const [collections, setCollections] = useState([]);
   const [collection, setCollection] = useState(null);
-  const [whatsapp, setWhatsapp] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState('loading'); // loading | ready | missing
 
   useEffect(() => {
-    async function load() {
-      setLoading(true);
-      let query = supabase
-        .from('alie_products')
-        .select('*, product_images:alie_product_images(*), product_variants:alie_product_variants(*), collections:alie_collections(name,slug)')
-        .eq('status', 'published');
+    let cancelled = false;
 
+    async function load() {
+      setStatus('loading');
+
+      // The chip row needs every active collection regardless of which one is open.
+      const collectionsPromise = supabase
+        .from('alie_collections')
+        .select('id, name, slug')
+        .eq('is_active', true)
+        .order('sort_order');
+
+      let current = null;
       if (slug) {
-        const { data: col } = await supabase.from('alie_collections').select('*').eq('slug', slug).single();
-        setCollection(col);
-        if (col) query = query.eq('collection_id', col.id);
-      } else {
-        setCollection(null);
+        // maybeSingle, not single: an unknown slug is a 404, not an exception.
+        const { data: col } = await supabase.from('alie_collections').select('*').eq('slug', slug).maybeSingle();
+        if (cancelled) return;
+        if (!col) { setStatus('missing'); return; }
+        current = col;
       }
 
-      const [{ data: prods }, { data: settings }] = await Promise.all([
+      let query = supabase.from('alie_products').select(SELECT).eq('status', 'published');
+      if (current) query = query.eq('collection_id', current.id);
+
+      const [{ data: prods }, { data: cols }] = await Promise.all([
         query.order('created_at', { ascending: false }),
-        supabase.from('alie_site_settings').select('*').eq('key', 'brand').single(),
+        collectionsPromise,
       ]);
+      if (cancelled) return;
+
+      setCollection(current);
       setProducts(prods || []);
-      setWhatsapp(settings?.value?.whatsapp_number || '');
-      setLoading(false);
+      setCollections(cols || []);
+      setStatus('ready');
+
+      setMeta({
+        title: `${current?.name || 'Collections'} — ${brand.name || 'ALIÈ'}`,
+        description: current?.description || '',
+        image: current?.banner_image_url,
+      });
     }
+
     load();
-  }, [slug]);
+    return () => { cancelled = true; };
+  }, [slug, brand.name]);
+
+  if (status === 'missing') {
+    return (
+      <div className="pt-40 px-6 pb-40 text-center">
+        <div className="eyebrow text-camel mb-3">Not found</div>
+        <h1 className="font-display text-4xl">No such collection</h1>
+        <Link to="/collections" className="inline-block mt-8 text-[11px] tracking-[0.16em] uppercase border-b border-ink pb-1">
+          See everything
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="pt-32 px-6 md:px-14 pb-32">
-      <div className="mb-14">
+      <div className="mb-10">
         <div className="eyebrow text-camel mb-3">{collection ? collection.name : 'All Collections'}</div>
-        <h1 className="font-display text-4xl md:text-5xl">{collection?.description || 'Every piece, one place.'}</h1>
+        <h1 className="font-display text-4xl md:text-5xl">
+          {collection?.description || collection?.name || 'Every piece'}
+        </h1>
       </div>
-      {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-9">
-          {Array.from({ length: 8 }).map((_, i) => <div key={i} className="aspect-[3/4] bg-stone/40 animate-pulse" />)}
-        </div>
-      ) : products.length === 0 ? (
-        <p className="text-ink/60">No published products in this collection yet.</p>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-9">
-          {products.map((p) => <ProductCard key={p.id} product={p} whatsappNumber={whatsapp} />)}
+
+      {collections.length > 0 && (
+        <div className="flex gap-2 flex-wrap mb-12">
+          <Link to="/collections" className={`badge-pill ${!slug ? 'bg-ink text-paper border-ink' : ''}`}>All</Link>
+          {collections.map((c) => (
+            <Link
+              key={c.id}
+              to={`/collections/${c.slug}`}
+              className={`badge-pill ${slug === c.slug ? 'bg-ink text-paper border-ink' : ''}`}
+            >
+              {c.name}
+            </Link>
+          ))}
         </div>
       )}
+
+      {status === 'loading' ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-9">
+          {Array.from({ length: 8 }).map((_, i) => <div key={i} className="aspect-[3/4] skeleton" />)}
+        </div>
+      ) : products.length === 0 ? (
+        <div className="empty-state">No published products in this collection yet.</div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-9">
+          {products.map((p) => <ProductCard key={p.id} product={p} whatsappNumber={brand.whatsapp_number} />)}
+        </div>
+      )}
+
       <CountdownBlock locationKey="collection_page" />
     </div>
   );

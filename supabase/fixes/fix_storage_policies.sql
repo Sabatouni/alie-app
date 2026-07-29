@@ -77,4 +77,19 @@ create policy "alie_media bucket: admin update"
     and (select role from public.alie_profiles where id = auth.uid()) = 'admin'
   );
 
-create policy "alie_media bucket: admin dele
+create policy "alie_media bucket: admin delete"
+  on storage.objects for delete
+  to authenticated
+  using (
+    bucket_id = 'alie-media'
+    and (select role from public.alie_profiles where id = auth.uid()) = 'admin'
+  );
+
+-- ── 3. Verify ───────────────────────────────────────────────────────────────
+-- After running the above, execute the two lines below to confirm the policies
+-- are in place (you should see 4 rows: public read + 3 admin rows).
+--
+-- select policyname, cmd, roles
+-- from pg_policies
+-- where tablename = 'objects' and schemaname = 'storage'
+--   and policyname like 'alie_media%';

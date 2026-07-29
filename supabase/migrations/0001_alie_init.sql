@@ -411,4 +411,28 @@ create policy "alie_media bucket: admin update"
   using (
     bucket_id = 'alie-media'
     and (select role from public.alie_profiles where id = auth.uid()) = 'admin'
-  
+  );
+
+create policy "alie_media bucket: admin delete"
+  on storage.objects for delete
+  to authenticated
+  using (
+    bucket_id = 'alie-media'
+    and (select role from public.alie_profiles where id = auth.uid()) = 'admin'
+  );
+
+-- ============================================================
+-- 7. SEED DATA
+-- ============================================================
+
+insert into alie_homepage_sections (section_key, title, subtitle, sort_order, content) values
+  ('hero',                'ALIE',                                                           'The Essential Collection',                    0, '{"body":"Linen and cotton, cut for movement and refined ease. Made to be worn, not styled.","cta_label":"Explore the Collection"}'::jsonb),
+  ('featured_collection', 'The Essential Collection',                                       'Eleven pieces built for years, not seasons.', 1, '{}'::jsonb),
+  ('arrivals',            'This week''s pieces',                                            'Everyday Linen',                              2, '{}'::jsonb),
+  ('philosophy',          'We make fewer things, cut to move with you and built to last.',  'Brand Philosophy',                            3, '{}'::jsonb)
+on conflict (section_key) do nothing;
+
+insert into alie_site_settings (key, value) values
+  ('brand',  '{"name":"ALIE","founded_in":"Zanzibar","whatsapp_number":""}'::jsonb),
+  ('social', '{"instagram":"","whatsapp":"","pinterest":""}'::jsonb)
+on conflict (key) do nothing;

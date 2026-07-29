@@ -1,11 +1,13 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutGrid, Shirt, Calendar, Newspaper, Users, Clock, Image, ShoppingBag, Settings, Home } from 'lucide-react';
+import { useSettings } from '../../context/SettingsContext';
+import { LayoutGrid, Shirt, Layers, Calendar, Newspaper, Users, Clock, Image, ShoppingBag, Settings, Home, ExternalLink } from 'lucide-react';
 
 const NAV = [
   ['/admin', LayoutGrid, 'Overview'],
   ['/admin/homepage', Home, 'Homepage'],
   ['/admin/products', Shirt, 'Products'],
+  ['/admin/collections', Layers, 'Collections'],
   ['/admin/events', Calendar, 'Events'],
   ['/admin/journal', Newspaper, 'Journal'],
   ['/admin/collaborations', Users, 'Collaborations'],
@@ -16,11 +18,13 @@ const NAV = [
 ];
 
 export default function DashboardLayout() {
-  const { profile, signOut } = useAuth();
+  const { profile, session, signOut } = useAuth();
+  const { brand } = useSettings();
+
   return (
     <div className="min-h-screen flex bg-paper">
-      <aside className="w-60 bg-ink text-paper/80 flex flex-col px-5 py-8">
-        <div className="font-display text-xl tracking-widest2 mb-10 px-2">ALIÈ Admin</div>
+      <aside className="w-60 bg-ink text-paper/80 flex flex-col px-5 py-8 shrink-0">
+        <div className="font-display text-xl tracking-widest2 mb-10 px-2">{brand.name || 'ALIÈ'} Admin</div>
         <nav className="flex-1 space-y-1">
           {NAV.map(([to, Icon, label]) => (
             <NavLink
@@ -37,12 +41,17 @@ export default function DashboardLayout() {
             </NavLink>
           ))}
         </nav>
-        <div className="px-3 pt-6 border-t border-paper/10 text-xs">
-          <div className="text-paper/50">{profile?.full_name || 'Admin'}</div>
-          <button onClick={signOut} className="mt-2 underline">Sign out</button>
+        <div className="px-3 pt-6 border-t border-paper/10 text-xs space-y-2">
+          <Link to="/" target="_blank" className="flex items-center gap-2 text-paper/50 hover:text-paper transition-colors">
+            <ExternalLink size={13} strokeWidth={1.5} /> View site
+          </Link>
+          <div className="text-paper/50 truncate" title={session?.user?.email}>
+            {profile?.full_name || session?.user?.email || 'Admin'}
+          </div>
+          <button onClick={signOut} className="underline hover:text-paper transition-colors">Sign out</button>
         </div>
       </aside>
-      <main className="flex-1 p-10 overflow-y-auto">
+      <main className="flex-1 p-10 overflow-y-auto min-w-0">
         <Outlet />
       </main>
     </div>

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
 const ToastContext = createContext(null);
 
@@ -11,8 +11,17 @@ export function ToastProvider({ children }) {
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3000);
   }, []);
 
+  // Memoised: without this the context value is a fresh object on every toast
+  // render, which changes the identity of `toast` for every consumer. Any
+  // useCallback/useEffect that (correctly) lists `toast` as a dependency would
+  // then re-run each time a toast appears — including data-loading effects.
+  const value = useMemo(
+    () => ({ success: (m) => push(m, 'success'), error: (m) => push(m, 'error') }),
+    [push]
+  );
+
   return (
-    <ToastContext.Provider value={{ success: (m) => push(m, 'success'), error: (m) => push(m, 'error') }}>
+    <ToastContext.Provider value={value}>
       {children}
       <div className="fixed bottom-6 right-6 z-[999] flex flex-col gap-2 items-end">
         {toasts.map((t) => (

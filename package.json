@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "verify:media": "node scripts/run-verify-media.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",

@@ -1,9 +1,33 @@
+import { imageSrcSet, DEFAULT_SIZES } from '../lib/mediaUrl';
+
 // Renders a CMS-managed image (from alie_media_library / alie_product_images / etc).
 // Falls back to a branded duotone placeholder until real photography is uploaded,
 // so layouts never look broken while content is still being populated.
-export default function ImageSlot({ src, alt = '', tone = '', className = '' }) {
+//
+// srcSet comes from lib/mediaUrl, which returns undefined unless Supabase image
+// transformation is switched on — so the attribute is simply absent by default
+// and the browser loads the (already optimizer-capped) original.
+export default function ImageSlot({
+  src,
+  alt = '',
+  tone = '',
+  className = '',
+  sizes = DEFAULT_SIZES,
+  priority = false,
+}) {
   if (src) {
-    return <img src={src} alt={alt} className={`object-cover w-full h-full ${className}`} loading="lazy" />;
+    return (
+      <img
+        src={src}
+        srcSet={imageSrcSet(src)}
+        sizes={sizes}
+        alt={alt}
+        className={`object-cover w-full h-full ${className}`}
+        loading={priority ? 'eager' : 'lazy'}
+        decoding="async"
+        fetchPriority={priority ? 'high' : undefined}
+      />
+    );
   }
   const toneClass =
     {

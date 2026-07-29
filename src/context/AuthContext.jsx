@@ -1,65 +1,87 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 const AuthContext = createContext(null);
 
+// Auth resolves in two steps: the session, then the admin profile that decides
+// clearance. `loading` must stay true across BOTH, otherwise ProtectedRoute sees
+// session=truthy / isAdmin=false for the gap in between and flashes
+// "your account doesn't have admin access" at a perfectly valid admin.
+//
+// That gap is exactly what the old code left open: after signIn() the session
+// arrived via onAuthStateChange while `loading` was already false from the
+// initial getSession() pass, so the profile fetch ran unguarded.
+
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
-  // loading stays true until BOTH the session AND the profile (if any) are resolved.
-  // Without this, ProtectedRoute can see isAdmin=false for a brief window while the
-  // profile is still fetching and redirect the user away from the admin.
   const [loading, setLoading] = useState(true);
 
+  // Bumped on every session change. A profile response whose ticket no longer
+  // matches belongs to a superseded session and is discarded — this is what
+  // stops a slow response for user A from granting clearance under user B.
+  const ticket = useRef(0);
+  const alive = useRef(true);
   useEffect(() => {
-    // Restore an existing session on mount.
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      // If there is no session we are done loading immediately (no profile to fetch).
-      if (!data.session) setLoading(false);
-    });
+    alive.current = true;
+    return () => { alive.current = false; };
+  }, []);
 
-    // Keep session in sync with auth state changes (sign-in, sign-out, token refresh).
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
-      setSession(s);
-      if (!s) {
-        setProfile(null);
-        setLoading(false);
-      }
+  useEffect(() => {
+    // onAuthStateChange fires immediately with INITIAL_SESSION in supabase-js v2,
+    // so it covers restore-on-refresh as well as sign-in and token refresh.
+    // Subscribing alone is enough; a separate getSession() would only duplicate it.
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (!alive.current) return;
+      ticket.current += 1;
+      setSession(nextSession ?? null);
+      // Every transition reopens the loading window until the profile settles.
+      setLoading(true);
     });
 
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  // Fetch the user's profile whenever the session changes.
-  // We keep loading=true until this resolves so ProtectedRoute never sees
-  // an intermediate isAdmin=false state.
   useEffect(() => {
-    if (!session?.user) return; // handled in the session effect above
+    const myTicket = ticket.current;
 
+    if (!session?.user) {
+      setProfile(null);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
     supabase
       .from('alie_profiles')
       .select('*')
       .eq('id', session.user.id)
-      .single()
+      .maybeSingle()
       .then(({ data, error }) => {
-        if (error && error.code !== 'PGRST116') {
-          // PGRST116 = no rows returned (profile not created yet)
-          console.warn('[AuthContext] profile fetch error:', error);
-        }
+        // Stale response, or the component went away — drop it.
+        if (cancelled || !alive.current || myTicket !== ticket.current) return;
+        if (error) console.warn('[AuthContext] profile fetch error:', error);
         setProfile(data ?? null);
         setLoading(false);
       });
+
+    return () => { cancelled = true; };
   }, [session]);
 
-  const value = {
-    session,
-    profile,
-    isAdmin: profile?.role === 'admin',
-    loading,
-    signIn: (email, password) => supabase.auth.signInWithPassword({ email, password }),
-    signOut: () => supabase.auth.signOut(),
-  };
+  const signIn = useCallback((email, password) => supabase.auth.signInWithPassword({ email, password }), []);
+  const signOut = useCallback(() => supabase.auth.signOut(), []);
+
+  const value = useMemo(
+    () => ({
+      session,
+      profile,
+      isAdmin: profile?.role === 'admin',
+      loading,
+      signIn,
+      signOut,
+    }),
+    [session, profile, loading, signIn, signOut]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

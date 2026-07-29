@@ -67,4 +67,7 @@ Manual steps only. Everything the code can do automatically, it already does.
 
 These are documented, working-as-designed simplifications, not bugs:
 
-- Product colours/sizes (`alie_product_variants`) and multiple images (`alie_product_images`) are created directly in Supabase for now, not yet from the admin Products form —
+- Product colours/sizes (`alie_product_variants`) and multiple images (`alie_product_images`) are created directly in Supabase for now, not yet from the admin Products form — that form covers the core product fields only.
+- Image fields across the admin take a pasted Media Library URL, not an inline picker.
+- Homepage section reordering is up/down buttons, not drag-and-drop.
+- Journal body is plain text, not a rich editor.

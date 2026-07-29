@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# The dashboard is behind auth and has nothing worth indexing.
+Disallow: /admin
+Disallow: /admin/
+
+# Session-specific pages.
+Disallow: /search
+Disallow: /wishlist
+
+Sitemap: /sitemap.xml
