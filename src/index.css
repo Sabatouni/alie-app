@@ -4,10 +4,131 @@
 
 html { scroll-behavior: smooth; }
 
+/* ── Motion system ──────────────────────────────────────────────
+   One easing curve and a narrow duration band (400–900ms) shared by
+   every storefront animation. Only opacity and transform are animated,
+   so everything stays compositor-friendly at 60fps. */
+:root {
+  --ease-editorial: cubic-bezier(0.22, 1, 0.36, 1); /* decisive start, long settle, no overshoot */
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Scroll reveals — elements begin slightly translated and transparent,
+   then settle when <Reveal> marks them shown. */
+.reveal {
+  opacity: 0;
+  transition:
+    opacity 0.9s var(--ease-editorial),
+    transform 0.9s var(--ease-editorial);
+}
+.reveal-rise  { transform: translateY(26px); }
+.reveal-fade  { transform: none; }
+.reveal-scale { transform: scale(1.03); }
+.reveal.is-shown { opacity: 1; transform: none; }
+
+/* Image mask reveal: the frame clips upward while the image inside settles. */
+.reveal-mask {
+  clip-path: inset(8% 0 8% 0);
+  transition:
+    opacity 0.9s var(--ease-editorial),
+    transform 0.9s var(--ease-editorial),
+    clip-path 0.9s var(--ease-editorial);
+}
+.reveal-mask.is-shown { clip-path: inset(0 0 0 0); }
+
+/* Floating editorial imagery — luxury magazine pages layered in space.
+   Movement is a few pixels over tens of seconds; opacity barely breathes. */
+@keyframes floatSlow {
+  0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.96; }
+  50%      { transform: translate3d(0, -9px, 0); opacity: 1; }
+}
+@keyframes floatSlower {
+  0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.94; }
+  50%      { transform: translate3d(3px, -6px, 0); opacity: 1; }
+}
+@keyframes floatDrift {
+  0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.95; }
+  50%      { transform: translate3d(-4px, -11px, 0); opacity: 1; }
+}
+.float-slow   { animation: floatSlow 16s ease-in-out infinite; }
+.float-slower { animation: floatSlower 21s ease-in-out infinite; }
+.float-drift  { animation: floatDrift 26s ease-in-out infinite; }
+
+/* Navigation underline — grows from the left on hover, stays for the
+   active route. 1px, currentColor, nothing flashy. */
+.nav-link { position: relative; }
+.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -5px;
+  height: 1px;
+  width: 100%;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.45s var(--ease-editorial);
+}
+.nav-link:hover::after,
+.nav-link:focus-visible::after,
+.nav-link.is-active::after { transform: scaleX(1); }
+
+/* Text links: a 1px underline that slides away and regrows from the left on
+   hover — the editorial cousin of the nav underline. */
+.link-underline { position: relative; }
+.link-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 1px;
+  width: 100%;
+  background: currentColor;
+  transform: scaleX(1);
+  transform-origin: right center;
+  transition: transform 0.5s var(--ease-editorial);
+}
+.link-underline:hover::after {
+  transform-origin: left center;
+  animation: underlineRegrow 0.7s var(--ease-editorial);
+}
+@keyframes underlineRegrow {
+  0%   { transform: scaleX(0); }
+  100% { transform: scaleX(1); }
+}
+
+/* Product cards: a barely-there lift with a soft ink shadow under the image. */
+.card-lift {
+  transition: transform 0.6s var(--ease-editorial);
+}
+.group:hover .card-lift { transform: translateY(-4px); }
+.card-shadow {
+  transition: box-shadow 0.6s var(--ease-editorial);
+}
+.group:hover .card-shadow { box-shadow: 0 24px 48px -28px rgba(35, 35, 3, 0.35); }
+
+/* The single image-hover treatment used across product, journal, event and
+   collection imagery: a slight zoom with a whisper of brightness. Defining it
+   once keeps every card speaking the same interaction language. */
+.img-hover {
+  transition:
+    transform 0.7s var(--ease-editorial),
+    filter 0.7s var(--ease-editorial);
+}
+.group:hover .img-hover {
+  transform: scale(1.04);
+  filter: brightness(1.04);
+}
+
+/* CMS images fade in once the file has actually arrived, so photography
+   settles into the page instead of popping. Placeholder gradients are
+   unaffected. */
+.img-fade { opacity: 0; transition: opacity 0.7s var(--ease-editorial); }
+.img-fade.is-loaded { opacity: 1; }
 
 .eyebrow {
   @apply font-body text-[11px] tracking-widest3 uppercase font-medium;
@@ -70,4 +191,12 @@ html { scroll-behavior: smooth; }
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
+  /* Reveals and floats must never hide or move content for users who
+     opted out of motion — everything renders settled and fully visible. */
+  .reveal, .reveal-mask {
+    opacity: 1 !important;
+    transform: none !important;
+    clip-path: none !important;
+  }
+  .float-slow, .float-slower, .float-drift { animation: none !important; }
 }

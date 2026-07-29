@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useSettings } from '../context/SettingsContext';
 import ProductCard from '../components/ProductCard';
+import Reveal from '../components/Reveal';
 import { setMeta } from '../lib/seo';
 
 // The Nav has always had a search icon. It was a <button> with no handler.
@@ -56,10 +57,10 @@ export default function Search() {
 
   return (
     <div className="pt-32 px-6 md:px-14 pb-32">
-      <div className="mb-10">
+      <Reveal variant="rise" className="mb-10">
         <div className="eyebrow text-camel mb-3">Search</div>
         <h1 className="font-display text-4xl md:text-5xl">Find a piece</h1>
-      </div>
+      </Reveal>
 
       <form onSubmit={submit} className="flex gap-3 max-w-xl mb-14">
         <input
@@ -87,8 +88,12 @@ export default function Search() {
           <p className="text-xs text-ink/45 mb-8 tabular-nums">
             {results.length} {results.length === 1 ? 'result' : 'results'} for "{query}"
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-9">
-            {results.map((p) => <ProductCard key={p.id} product={p} whatsappNumber={brand.whatsapp_number} />)}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-9 md:gap-y-16">
+            {results.map((p, i) => (
+              <Reveal key={p.id} variant="rise" delay={(i % 4) * 90}>
+                <ProductCard product={p} whatsappNumber={brand.whatsapp_number} />
+              </Reveal>
+            ))}
           </div>
         </>
       )}

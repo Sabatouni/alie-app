@@ -60,23 +60,29 @@ export default function CountdownBlock({ locationKey }) {
   const m = Math.floor((remaining % 3600000) / 60000);
   const s = Math.floor((remaining % 60000) / 1000);
 
+  // Styled as an editorial announcement — hairline rules, a quiet eyebrow and
+  // the date set in the display serif — rather than a sales banner.
   return (
     <section className="relative bg-smoke text-paper py-28 md:py-36 px-6 text-center overflow-hidden">
       {countdown.banner_image_url && (
-        <div className="absolute inset-0 opacity-25">
+        <div className="absolute inset-0 opacity-20">
           <ImageSlot src={countdown.banner_image_url} alt="" tone="mist" sizes="100vw" />
         </div>
       )}
-      <div className="relative z-10">
-        <div className="eyebrow text-camel-soft mb-4">Limited Editions</div>
-        <h2 className="font-display text-3xl md:text-5xl max-w-xl mx-auto">{countdown.title}</h2>
+      <div className="relative z-10 max-w-4xl mx-auto">
+        <div className="w-px h-12 bg-paper/30 mx-auto mb-8" aria-hidden="true" />
+        <div className="eyebrow text-camel-soft mb-5">Limited Editions</div>
+        <h2 className="font-display text-3xl md:text-5xl max-w-xl mx-auto leading-tight">{countdown.title}</h2>
 
         {!done ? (
-          <div className="flex justify-center gap-10 md:gap-12 mt-14 flex-wrap">
-            {[[d, 'Days'], [h, 'Hours'], [m, 'Minutes'], [s, 'Seconds']].map(([val, label]) => (
-              <div key={label}>
-                <div className="font-display text-5xl md:text-7xl text-camel-soft tabular-nums">{pad(val)}</div>
-                <div className="text-[10px] tracking-[0.2em] uppercase text-paper/60 mt-2">{label}</div>
+          <div className="flex justify-center items-baseline mt-14 flex-wrap">
+            {[[d, 'Days'], [h, 'Hours'], [m, 'Minutes'], [s, 'Seconds']].map(([val, label], i) => (
+              <div key={label} className="flex items-baseline">
+                {i > 0 && <div className="w-px h-10 bg-paper/15 self-center mx-5 md:mx-8" aria-hidden="true" />}
+                <div>
+                  <div className="font-display text-5xl md:text-7xl text-camel-soft tabular-nums">{pad(val)}</div>
+                  <div className="text-[10px] tracking-[0.2em] uppercase text-paper/55 mt-3">{label}</div>
+                </div>
               </div>
             ))}
           </div>

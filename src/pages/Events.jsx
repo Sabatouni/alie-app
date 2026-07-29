@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useSettings } from '../context/SettingsContext';
 import ImageSlot from '../components/ImageSlot';
 import CountdownBlock from '../components/CountdownBlock';
+import Reveal from '../components/Reveal';
 import { setMeta } from '../lib/seo';
 
 // The Events admin has existed since 0001; nothing on the storefront read it.
@@ -39,10 +40,10 @@ export default function Events() {
 
   return (
     <div className="pt-32 px-6 md:px-14 pb-32">
-      <div className="mb-14">
+      <Reveal variant="rise" className="mb-14">
         <div className="eyebrow text-camel mb-3">Events</div>
         <h1 className="font-display text-4xl md:text-5xl">Where to find us</h1>
-      </div>
+      </Reveal>
 
       {loading ? (
         <div className="grid md:grid-cols-2 gap-10">
@@ -78,14 +79,16 @@ function EventGrid({ events, muted = false }) {
       {events.map((event) => {
         const gallery = [...(event.images || [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
         return (
-          <article key={event.id}>
-            <div className="aspect-[16/9] overflow-hidden bg-stone/20">
-              <ImageSlot
-                src={event.banner_image_url || gallery[0]?.url}
-                alt={event.title}
-                tone="mist"
-                sizes="(max-width: 768px) 100vw, 50vw"
-              />
+          <Reveal as="article" variant="rise" key={event.id} className="group">
+            <div className="aspect-[16/9] overflow-hidden bg-stone/20 card-shadow">
+              <div className="w-full h-full img-hover">
+                <ImageSlot
+                  src={event.banner_image_url || gallery[0]?.url}
+                  alt={event.title}
+                  tone="mist"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                />
+              </div>
             </div>
             <div className="mt-5">
               <div className="flex gap-3 items-center text-[10px] tracking-[0.16em] uppercase text-camel">
@@ -120,7 +123,7 @@ function EventGrid({ events, muted = false }) {
                 </a>
               )}
             </div>
-          </article>
+          </Reveal>
         );
       })}
     </div>

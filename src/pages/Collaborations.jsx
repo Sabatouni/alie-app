@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useSettings } from '../context/SettingsContext';
 import ImageSlot from '../components/ImageSlot';
+import Reveal from '../components/Reveal';
 import { setMeta } from '../lib/seo';
 
 // The Collaborations admin has existed since 0001; nothing on the storefront
@@ -32,10 +33,10 @@ export default function Collaborations() {
 
   return (
     <div className="pt-32 px-6 md:px-14 pb-32">
-      <div className="mb-14">
+      <Reveal variant="rise" className="mb-14">
         <div className="eyebrow text-camel mb-3">Collaborations</div>
         <h1 className="font-display text-4xl md:text-5xl">Work made with others</h1>
-      </div>
+      </Reveal>
 
       {loading ? (
         <div className="space-y-16">
@@ -56,7 +57,7 @@ export default function Collaborations() {
           {rows.map((c, i) => {
             const media = [...(c.media || [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
             return (
-              <article key={c.id} className="grid md:grid-cols-2 gap-10 items-center">
+              <Reveal as="article" variant="rise" key={c.id} className="grid md:grid-cols-2 gap-10 items-center">
                 <div className={`aspect-[4/3] overflow-hidden bg-stone/20 ${i % 2 ? 'md:order-2' : ''}`}>
                   <ImageSlot
                     src={c.hero_image_url || media[0]?.url}
@@ -84,7 +85,7 @@ export default function Collaborations() {
                     </div>
                   )}
                 </div>
-              </article>
+              </Reveal>
             );
           })}
         </div>

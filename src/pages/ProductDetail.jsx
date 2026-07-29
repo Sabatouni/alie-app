@@ -7,6 +7,7 @@ import ImageSlot from '../components/ImageSlot';
 import ProductCard from '../components/ProductCard';
 import OrderPanel from '../components/OrderPanel';
 import CountdownBlock from '../components/CountdownBlock';
+import Reveal from '../components/Reveal';
 import { galleryProductImages } from '../lib/productImages';
 import { isWishlisted, toggleWishlist } from '../lib/wishlist';
 import { setMeta } from '../lib/seo';
@@ -87,7 +88,7 @@ export default function ProductDetail() {
         <div className="eyebrow text-camel mb-3">Not found</div>
         <h1 className="font-display text-4xl">This piece isn't available</h1>
         <p className="text-sm text-ink/55 mt-4">It may have been archived or the link is out of date.</p>
-        <Link to="/collections" className="inline-block mt-8 text-[11px] tracking-[0.16em] uppercase border-b border-ink pb-1">
+        <Link to="/collections" className="link-underline inline-block mt-8 text-[11px] tracking-[0.16em] uppercase pb-1">
           Browse the collections
         </Link>
       </div>
@@ -108,7 +109,7 @@ export default function ProductDetail() {
     <div className="pt-28 px-6 md:px-14 pb-32">
       <div className="grid md:grid-cols-2 gap-14">
         <div>
-          <div className="aspect-[3/4]">
+          <Reveal variant="mask" className="aspect-[3/4] overflow-hidden">
             <ImageSlot
               src={images[activeImg]?.url}
               alt={images[activeImg]?.alt_text || product.name}
@@ -116,7 +117,7 @@ export default function ProductDetail() {
               sizes="(max-width: 768px) 100vw, 50vw"
               priority
             />
-          </div>
+          </Reveal>
           {images.length > 1 && (
             <div className="flex gap-2 mt-3 flex-wrap">
               {images.map((img, i) => (
@@ -189,14 +190,20 @@ export default function ProductDetail() {
 
       {related.length > 0 && (
         <div className="mt-32">
-          <h2 className="font-display text-3xl mb-10">You may also like</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-9">
-            {related.map((p) => <ProductCard key={p.id} product={p} whatsappNumber={brand.whatsapp_number} />)}
+          <Reveal variant="rise">
+            <h2 className="font-display text-3xl mb-10">You may also like</h2>
+          </Reveal>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-9 md:gap-y-16">
+            {related.map((p, i) => (
+              <Reveal key={p.id} variant="rise" delay={(i % 4) * 90}>
+                <ProductCard product={p} whatsappNumber={brand.whatsapp_number} />
+              </Reveal>
+            ))}
           </div>
         </div>
       )}
 
-      <Link to="/collections" className="inline-block mt-16 text-[11px] tracking-[0.16em] uppercase border-b border-ink pb-1">
+      <Link to="/collections" className="link-underline inline-block mt-16 text-[11px] tracking-[0.16em] uppercase pb-1">
         ← Back to Collections
       </Link>
 

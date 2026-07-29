@@ -18,9 +18,9 @@ export default function NotFound() {
         The link may be out of date, or the page may have moved.
       </p>
       <div className="flex gap-6 mt-9 flex-wrap justify-center">
-        <Link to="/" className="text-[11px] tracking-[0.16em] uppercase border-b border-ink pb-1">Home</Link>
-        <Link to="/collections" className="text-[11px] tracking-[0.16em] uppercase border-b border-ink pb-1">Collections</Link>
-        <Link to="/search" className="text-[11px] tracking-[0.16em] uppercase border-b border-ink pb-1">Search</Link>
+        <Link to="/" className="link-underline text-[11px] tracking-[0.16em] uppercase pb-1">Home</Link>
+        <Link to="/collections" className="link-underline text-[11px] tracking-[0.16em] uppercase pb-1">Collections</Link>
+        <Link to="/search" className="link-underline text-[11px] tracking-[0.16em] uppercase pb-1">Search</Link>
       </div>
     </div>
   );

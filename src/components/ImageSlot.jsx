@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { imageSrcSet, DEFAULT_SIZES } from '../lib/mediaUrl';
 
 // Renders a CMS-managed image (from alie_media_library / alie_product_images / etc).
@@ -15,6 +16,8 @@ export default function ImageSlot({
   sizes = DEFAULT_SIZES,
   priority = false,
 }) {
+  const [loaded, setLoaded] = useState(false);
+
   if (src) {
     return (
       <img
@@ -22,7 +25,12 @@ export default function ImageSlot({
         srcSet={imageSrcSet(src)}
         sizes={sizes}
         alt={alt}
-        className={`object-cover w-full h-full ${className}`}
+        // Photography fades in on arrival rather than popping. The ref check
+        // covers cached images whose load event fired before React attached
+        // the handler; prefers-reduced-motion zeroes the transition globally.
+        onLoad={() => setLoaded(true)}
+        ref={(el) => { if (el && el.complete && el.naturalWidth > 0) setLoaded(true); }}
+        className={`object-cover w-full h-full img-fade ${loaded ? 'is-loaded' : ''} ${className}`}
         loading={priority ? 'eager' : 'lazy'}
         decoding="async"
         fetchPriority={priority ? 'high' : undefined}

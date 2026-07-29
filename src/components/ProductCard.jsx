@@ -16,8 +16,8 @@ export default function ProductCard({ product, whatsappNumber }) {
   const onSale = product.compare_at_price && Number(product.compare_at_price) > Number(product.price);
 
   return (
-    <div className="flex flex-col group">
-      <div className="relative aspect-[3/4] overflow-hidden bg-stone/20">
+    <div className="flex flex-col group card-lift">
+      <div className="relative aspect-[3/4] overflow-hidden bg-stone/20 card-shadow">
         {product.is_new && (
           <span className="absolute top-3.5 left-3.5 z-10 text-[9px] tracking-[0.16em] uppercase px-2.5 py-1.5 bg-paper text-ink">New</span>
         )}
@@ -32,7 +32,7 @@ export default function ProductCard({ product, whatsappNumber }) {
         >
           <Heart size={14} strokeWidth={1.3} fill={wishlisted ? 'currentColor' : 'none'} className={wishlisted ? 'text-camel' : 'text-ink'} />
         </button>
-        <Link to={`/product/${product.slug}`} className="block w-full h-full transition-transform duration-700 ease-out group-hover:scale-105">
+        <Link to={`/product/${product.slug}`} className="block w-full h-full img-hover">
           <ImageSlot
             src={primaryImage?.url}
             alt={primaryImage?.alt_text || product.name}

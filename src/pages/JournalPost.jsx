@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useSettings } from '../context/SettingsContext';
 import ImageSlot from '../components/ImageSlot';
+import Reveal from '../components/Reveal';
 import { setMeta } from '../lib/seo';
 
 // The Journal index has always linked to /journal/:slug. That route did not
@@ -57,7 +58,7 @@ export default function JournalPost() {
       <div className="pt-40 px-6 pb-40 text-center">
         <div className="eyebrow text-camel mb-3">Not found</div>
         <h1 className="font-display text-4xl">This article isn't published</h1>
-        <Link to="/journal" className="inline-block mt-8 text-[11px] tracking-[0.16em] uppercase border-b border-ink pb-1">
+        <Link to="/journal" className="link-underline inline-block mt-8 text-[11px] tracking-[0.16em] uppercase pb-1">
           Back to the Journal
         </Link>
       </div>
@@ -79,9 +80,9 @@ export default function JournalPost() {
       </div>
 
       {post.hero_image_url && (
-        <div className="aspect-[16/9] max-w-4xl mx-auto mt-12 overflow-hidden">
+        <Reveal variant="mask" className="aspect-[16/9] max-w-4xl mx-auto mt-12 overflow-hidden">
           <ImageSlot src={post.hero_image_url} alt={post.title} tone="sand" sizes="(max-width: 1024px) 100vw, 900px" priority />
-        </div>
+        </Reveal>
       )}
 
       <div className="max-w-2xl mx-auto mt-14">
@@ -96,7 +97,7 @@ export default function JournalPost() {
           </div>
         )}
 
-        <Link to="/journal" className="inline-block mt-14 text-[11px] tracking-[0.16em] uppercase border-b border-ink pb-1">
+        <Link to="/journal" className="link-underline inline-block mt-14 text-[11px] tracking-[0.16em] uppercase pb-1">
           ← All articles
         </Link>
       </div>

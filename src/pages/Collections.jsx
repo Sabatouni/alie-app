@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useSettings } from '../context/SettingsContext';
 import ProductCard from '../components/ProductCard';
 import CountdownBlock from '../components/CountdownBlock';
+import Reveal from '../components/Reveal';
 import { setMeta } from '../lib/seo';
 
 const SELECT = '*, product_images:alie_product_images(*), product_variants:alie_product_variants(*), collections:alie_collections(name,slug)';
@@ -68,7 +69,7 @@ export default function Collections() {
       <div className="pt-40 px-6 pb-40 text-center">
         <div className="eyebrow text-camel mb-3">Not found</div>
         <h1 className="font-display text-4xl">No such collection</h1>
-        <Link to="/collections" className="inline-block mt-8 text-[11px] tracking-[0.16em] uppercase border-b border-ink pb-1">
+        <Link to="/collections" className="link-underline inline-block mt-8 text-[11px] tracking-[0.16em] uppercase pb-1">
           See everything
         </Link>
       </div>
@@ -77,12 +78,12 @@ export default function Collections() {
 
   return (
     <div className="pt-32 px-6 md:px-14 pb-32">
-      <div className="mb-10">
+      <Reveal variant="rise" className="mb-10 max-w-3xl">
         <div className="eyebrow text-camel mb-3">{collection ? collection.name : 'All Collections'}</div>
-        <h1 className="font-display text-4xl md:text-5xl">
+        <h1 className="font-display text-4xl md:text-5xl leading-tight">
           {collection?.description || collection?.name || 'Every piece'}
         </h1>
-      </div>
+      </Reveal>
 
       {collections.length > 0 && (
         <div className="flex gap-2 flex-wrap mb-12">
@@ -106,8 +107,12 @@ export default function Collections() {
       ) : products.length === 0 ? (
         <div className="empty-state">No published products in this collection yet.</div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-9">
-          {products.map((p) => <ProductCard key={p.id} product={p} whatsappNumber={brand.whatsapp_number} />)}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-9 md:gap-y-16">
+          {products.map((p, i) => (
+            <Reveal key={p.id} variant="rise" delay={(i % 4) * 90}>
+              <ProductCard product={p} whatsappNumber={brand.whatsapp_number} />
+            </Reveal>
+          ))}
         </div>
       )}
 

@@ -69,9 +69,9 @@ export default function Nav() {
               <NavLink
                 to={l.to}
                 className={({ isActive }) =>
-                  `text-[11px] tracking-[0.14em] uppercase transition-colors duration-300 hover:text-camel ${
+                  `nav-link text-[11px] tracking-[0.14em] uppercase transition-colors duration-300 hover:text-camel ${
                     dark ? 'text-ink' : 'text-paper/85'
-                  } ${isActive ? 'text-camel' : ''}`
+                  } ${isActive ? 'is-active text-camel' : ''}`
                 }
               >
                 {l.label}
@@ -114,18 +114,25 @@ export default function Nav() {
             <li
               key={l.to}
               className={`transition-all duration-500 ${menuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}
-              style={{ transitionDelay: menuOpen ? `${i * 60}ms` : '0ms' }}
+              style={{ transitionDelay: menuOpen ? `${i * 70}ms` : '0ms', transitionTimingFunction: 'var(--ease-editorial)' }}
             >
               <Link
                 to={l.to}
                 onClick={() => setMenuOpen(false)}
                 tabIndex={menuOpen ? 0 : -1}
-                className="font-display text-3xl text-ink hover:text-camel transition-colors"
+                className="font-display text-3xl text-ink hover:text-camel transition-colors duration-500"
               >
                 {l.label}
               </Link>
             </li>
           ))}
+          <li
+            className={`mt-6 transition-all duration-500 ${menuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}
+            style={{ transitionDelay: menuOpen ? `${LINKS.length * 70}ms` : '0ms', transitionTimingFunction: 'var(--ease-editorial)' }}
+            aria-hidden="true"
+          >
+            <div className="w-px h-10 bg-ink/20 mx-auto" />
+          </li>
         </ul>
       </div>
     </>

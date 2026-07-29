@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useSettings } from '../context/SettingsContext';
 import ImageSlot from '../components/ImageSlot';
+import Reveal from '../components/Reveal';
 import { setMeta } from '../lib/seo';
 
 export default function Journal() {
@@ -41,10 +42,10 @@ export default function Journal() {
 
   return (
     <div className="pt-32 px-6 md:px-14 pb-32">
-      <div className="mb-10">
+      <Reveal variant="rise" className="mb-10">
         <div className="eyebrow text-camel mb-3">Journal</div>
         <h1 className="font-display text-4xl md:text-5xl">Notes from the studio</h1>
-      </div>
+      </Reveal>
 
       {usedCategories.length > 0 && (
         <div className="flex gap-2 flex-wrap mb-12">
@@ -81,11 +82,12 @@ export default function Journal() {
           {posts.length === 0 ? 'No published articles yet — check back soon.' : 'Nothing in this category yet.'}
         </div>
       ) : (
-        <div className="grid md:grid-cols-3 gap-8">
-          {visible.map((post) => (
-            <Link key={post.id} to={`/journal/${post.slug}`} className="group block">
-              <div className="aspect-[4/5] overflow-hidden bg-stone/20">
-                <div className="w-full h-full transition-transform duration-700 group-hover:scale-105">
+        <div className="grid md:grid-cols-3 gap-8 md:gap-y-14">
+          {visible.map((post, i) => (
+            <Reveal key={post.id} variant="rise" delay={(i % 3) * 100} as="div">
+            <Link to={`/journal/${post.slug}`} className="group block card-lift">
+              <div className="aspect-[4/5] overflow-hidden bg-stone/20 card-shadow">
+                <div className="w-full h-full img-hover">
                   <ImageSlot src={post.hero_image_url} alt={post.title} tone="sand" sizes="(max-width: 768px) 100vw, 33vw" />
                 </div>
               </div>
@@ -96,6 +98,7 @@ export default function Journal() {
               {post.excerpt && <p className="text-sm text-ink/60 mt-2 leading-relaxed line-clamp-2">{post.excerpt}</p>}
               {post.reading_time && <div className="text-xs text-ink/50 mt-3">{post.reading_time} min read</div>}
             </Link>
+            </Reveal>
           ))}
         </div>
       )}
