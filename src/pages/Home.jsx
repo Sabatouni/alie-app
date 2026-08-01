@@ -79,41 +79,45 @@ export default function Home() {
   );
 }
 
-// The hero is composed like a magazine cover: full-bleed campaign image,
-// two smaller frames from the Media Library floating above it, and the
-// masthead settling in last. Every text line and the CTA still come from
-// the same admin-editable section row — only the composition changed.
+// Restored to the original poster composition: the masthead sits center-left
+// in a deep field — wide-tracked eyebrow, enormous serif title, two quiet
+// lines, one outlined CTA — the way a Vogue cover opens, not the way an
+// ecommerce hero anchors to the bottom. The scrim is asymmetric (deep on the
+// text side, nearly clear on the right) so campaign photography stays visible
+// where the floating Media Library frames live. All content is still the
+// admin's hero section row; only composition changed.
 function Hero({ data }) {
   return (
-    <section className="relative h-screen min-h-[700px] flex flex-col justify-end overflow-hidden">
+    <section className="relative h-screen min-h-[700px] flex flex-col justify-center overflow-hidden bg-ink">
       <div className="absolute inset-0">
         <ImageSlot src={data.image_url} alt={data.title || ''} tone="sand" sizes="100vw" priority />
       </div>
-      <div className="absolute inset-0 bg-gradient-to-b from-ink/10 via-ink/20 to-ink/75" />
+      <div className="absolute inset-0 bg-gradient-to-r from-ink/80 via-ink/45 to-ink/10" />
+      <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-ink/40 to-transparent" />
 
       <FloatingImages excludeUrl={data.image_url} />
 
-      <div className="relative z-10 px-6 md:px-14 pb-24 text-paper">
+      <div className="relative z-10 px-6 md:px-14 max-w-4xl text-paper">
         {data.subtitle && (
           <Reveal variant="fade" delay={100}>
-            <div className="eyebrow text-camel-soft mb-5">{data.subtitle}</div>
+            <div className="eyebrow tracking-widest3 text-camel-soft mb-6">{data.subtitle}</div>
           </Reveal>
         )}
         {data.title && (
           <Reveal variant="rise" delay={220}>
-            <h1 className="font-display text-6xl md:text-[9rem] leading-none tracking-wide">{data.title}</h1>
+            <h1 className="font-display text-7xl md:text-[10rem] leading-[0.95] tracking-wide">{data.title}</h1>
           </Reveal>
         )}
         {data.content?.body && (
           <Reveal variant="fade" delay={400}>
-            <p className="text-sm max-w-md mt-5 text-paper/80 leading-relaxed">{data.content.body}</p>
+            <p className="text-sm max-w-md mt-7 text-paper/80 leading-relaxed">{data.content.body}</p>
           </Reveal>
         )}
         {data.content?.cta_label && (
           <Reveal variant="fade" delay={520}>
             <a
               href={data.content.cta_href || '#arrivals'}
-              className="inline-flex mt-8 text-[11px] tracking-[0.18em] uppercase border border-paper/50 px-7 py-4 hover:bg-paper hover:text-ink transition-colors duration-500"
+              className="inline-flex mt-10 text-[11px] tracking-[0.18em] uppercase border border-paper/50 px-8 py-4 hover:bg-paper hover:text-ink transition-colors duration-500"
             >
               {data.content.cta_label}
             </a>
@@ -124,17 +128,24 @@ function Hero({ data }) {
   );
 }
 
-// Presented as a magazine spread: image offset high on one side, text sitting
-// lower on the other, with generous negative space between the two.
+// Restored to the original layered spread: the photograph bleeds toward the
+// viewport edge with a solid olive panel offset behind it — the overlapping-
+// rectangles signature from the first landing page — while the text sits
+// lower on the right with generous negative space between the two.
 function FeaturedCollection({ data }) {
   return (
-    <section className="py-28 md:py-40 px-6 md:px-14 grid md:grid-cols-12 gap-0 items-start">
-      <Reveal variant="mask" className="group md:col-span-6 lg:col-span-5 aspect-[4/5] overflow-hidden">
-        <div className="w-full h-full img-hover">
-          <ImageSlot src={data.image_url} alt={data.title || ''} tone="stone" sizes="(max-width: 768px) 100vw, 50vw" />
-        </div>
-      </Reveal>
-      <div className="md:col-span-6 lg:col-span-6 lg:col-start-7 flex flex-col justify-center pt-10 md:pt-24 md:pl-16">
+    <section className="py-28 md:py-40 px-6 md:px-14 grid md:grid-cols-12 gap-0 items-start overflow-x-clip">
+      <div className="relative -ml-6 md:-ml-14 md:col-span-6 lg:col-span-5">
+        {/* The offset panel: a flat deep-olive rectangle shifted down-right,
+            layered beneath the image like the original composition. */}
+        <div className="absolute top-8 -right-6 md:-right-10 bottom-[-2rem] left-10 bg-smoke" aria-hidden="true" />
+        <Reveal variant="mask" className="group relative aspect-[4/5] overflow-hidden">
+          <div className="w-full h-full img-hover">
+            <ImageSlot src={data.image_url} alt={data.title || ''} tone="stone" sizes="(max-width: 768px) 100vw, 50vw" />
+          </div>
+        </Reveal>
+      </div>
+      <div className="md:col-span-6 lg:col-span-6 lg:col-start-7 flex flex-col justify-center pt-16 md:pt-24 md:pl-16">
         {data.subtitle && (
           <Reveal variant="fade">
             <div className="eyebrow text-camel mb-4">{data.subtitle}</div>
@@ -167,7 +178,7 @@ function FeaturedCollection({ data }) {
 
 function ProductRow({ data, id, products, loading, whatsapp }) {
   return (
-    <section id={id} className="px-6 md:px-14 pb-32">
+    <section id={id} className="px-6 md:px-14 pt-24 md:pt-28 pb-32">
       <Reveal variant="rise" className="flex justify-between items-end mb-14 flex-wrap gap-6">
         <div>
           {data?.subtitle && <div className="eyebrow text-camel mb-3">{data.subtitle}</div>}
@@ -194,26 +205,29 @@ function ProductRow({ data, id, products, loading, whatsapp }) {
   );
 }
 
-// Rendered as an editorial statement rather than a stacked section: a thin
-// hairline above, the title set large in the display serif, body copy held
-// narrow beneath it.
+// Restored to the original's full-width statement band: the quote sits
+// centered on its own tinted chapter of the page, the way "We make fewer
+// things…" did on the first landing page, rather than floating on the same
+// paper as the sections around it.
 function Philosophy({ data }) {
   return (
-    <section className="text-center max-w-3xl mx-auto px-6 py-32 md:py-44">
-      <Reveal variant="fade">
-        <div className="w-px h-14 bg-ink/25 mx-auto mb-10" aria-hidden="true" />
-        {data.subtitle && <div className="eyebrow text-camel mb-6">{data.subtitle}</div>}
-      </Reveal>
-      {data.title && (
-        <Reveal variant="rise" delay={140}>
-          <h2 className="font-display text-3xl md:text-5xl leading-snug">{data.title}</h2>
+    <section className="bg-paper-dim">
+      <div className="text-center max-w-3xl mx-auto px-6 py-32 md:py-44">
+        <Reveal variant="fade">
+          <div className="w-px h-14 bg-ink/25 mx-auto mb-10" aria-hidden="true" />
+          {data.subtitle && <div className="eyebrow text-camel mb-6">{data.subtitle}</div>}
         </Reveal>
-      )}
-      {data.content?.body && (
-        <Reveal variant="fade" delay={280}>
-          <p className="text-[15px] text-ink/70 mt-8 leading-loose max-w-xl mx-auto">{data.content.body}</p>
-        </Reveal>
-      )}
+        {data.title && (
+          <Reveal variant="rise" delay={140}>
+            <h2 className="font-display text-3xl md:text-5xl leading-snug">{data.title}</h2>
+          </Reveal>
+        )}
+        {data.content?.body && (
+          <Reveal variant="fade" delay={280}>
+            <p className="text-[15px] text-ink/70 mt-8 leading-loose max-w-xl mx-auto">{data.content.body}</p>
+          </Reveal>
+        )}
+      </div>
     </section>
   );
 }

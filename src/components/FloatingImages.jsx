@@ -34,16 +34,17 @@ export default function FloatingImages({ excludeUrl }) {
   // replaced a frame later by photographs.
   if (images === null) return null;
 
-  // Both frames live in the upper-right quadrant, well away from the masthead
-  // and body copy that sit bottom-left. The smaller one only appears on large
-  // screens so tablets get a single, calmer accent.
+  // The masthead sits center-left, so the entire right half is free for the
+  // layered frames — staggered like magazine cutouts, one higher and larger,
+  // one lower and smaller, overlapping diagonally. The smaller one only
+  // appears on large screens so tablets get a single, calmer accent.
   const frames = [
     {
-      className: 'top-[14%] right-[7%] w-40 lg:w-52 aspect-[3/4] float-slow',
+      className: 'top-[18%] right-[8%] w-44 lg:w-56 aspect-[3/4] float-slow',
       tone: 'stone',
     },
     {
-      className: 'top-[46%] right-[24%] w-28 lg:w-36 aspect-[4/5] float-drift hidden lg:block',
+      className: 'bottom-[16%] right-[22%] w-32 lg:w-40 aspect-[4/5] float-drift hidden lg:block',
       tone: 'camel',
     },
   ];
