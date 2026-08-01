@@ -47,12 +47,12 @@ html { scroll-behavior: smooth; }
   position: absolute;
   inset: 0;
   opacity: 0;
-  transition: opacity 1.6s var(--ease-editorial);
+  transition: opacity 1.9s var(--ease-editorial);
 }
 .hero-layer.is-active { opacity: 1; }
 @keyframes heroDrift {
-  from { transform: scale(1) translate3d(0, 0, 0); }
-  to   { transform: scale(1.035) translate3d(0, -6px, 0); }
+  from { transform: scale(1) translate3d(0, 0, 0); filter: brightness(0.98); }
+  to   { transform: scale(1.05) translate3d(0, -8px, 0); filter: brightness(1); }
 }
 .hero-drift { animation: heroDrift 8s linear forwards; }
 

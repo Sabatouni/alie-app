@@ -34,13 +34,20 @@ export default function HeroSlideshow({ primaryUrl, alt = '' }) {
 
   useEffect(() => {
     let cancelled = false;
+    // Admins can curate the rotation by uploading into a "hero" folder in the
+    // Media Library. When that folder has images, only those rotate; when it
+    // doesn't exist (the admin UI currently files everything under 'general'),
+    // the newest uploads rotate instead. One query either way.
     supabase
       .from('alie_media_library')
-      .select('url')
+      .select('url, folder')
       .order('created_at', { ascending: false })
-      .limit(MAX_IMAGES)
+      .limit(24)
       .then(({ data }) => {
-        if (!cancelled) setLibraryUrls((data || []).map((m) => m.url).filter(Boolean));
+        if (cancelled) return;
+        const rows = (data || []).filter((m) => m.url);
+        const hero = rows.filter((m) => m.folder === 'hero');
+        setLibraryUrls((hero.length ? hero : rows).map((m) => m.url));
       });
     return () => { cancelled = true; };
   }, []);

@@ -6,6 +6,7 @@ import ProductCard from '../components/ProductCard';
 import ImageSlot from '../components/ImageSlot';
 import HeroSlideshow from '../components/HeroSlideshow';
 import CountdownBlock from '../components/CountdownBlock';
+import Reveal from '../components/Reveal';
 import { setMeta } from '../lib/seo';
 
 // The landing page renders the ORIGINAL ALIÈ composition (restored 1:1 from
@@ -63,6 +64,14 @@ export default function Home() {
   // no wrapper, no spacing — when no enabled countdown targets that slot.
   const COUNTDOWN_AFTER = { hero: 'homepage_hero', arrivals: 'homepage_below_arrivals' };
 
+  // Before the homepage sections arrive there must never be a flash of paper —
+  // the first paint is a full-viewport ink field, exactly where the hero will
+  // fade in. This is why the campaign photography feels like it starts at the
+  // very top: it does, from the first frame.
+  if (loading && sections.length === 0) {
+    return <div className="h-screen min-h-[700px] bg-ink" aria-hidden="true" />;
+  }
+
   return (
     <div>
       {sections.map((s) => {
@@ -86,46 +95,79 @@ export default function Home() {
 //    behind the masthead automatically. ──────────────────────────────────────
 function Hero({ data }) {
   return (
-    <section className="relative h-screen min-h-[700px] flex flex-col justify-end overflow-hidden">
+    <section className="relative h-screen min-h-[700px] flex flex-col justify-end overflow-hidden bg-ink">
       <div className="absolute inset-0">
         <HeroSlideshow primaryUrl={data.image_url} alt={data.title || ''} />
       </div>
       <div className="absolute inset-0 bg-gradient-to-b from-ink/15 to-ink/75" />
       <div className="relative z-10 px-6 md:px-14 pb-24 text-paper">
-        {data.subtitle && <div className="eyebrow text-camel-soft mb-5">{data.subtitle}</div>}
-        {data.title && <h1 className="font-display text-6xl md:text-[9rem] leading-none tracking-wide">{data.title}</h1>}
-        <p className="text-sm max-w-md mt-5 text-paper/80 leading-relaxed">
-          {data.content?.body || 'Linen and cotton, cut for movement and refined ease.'}
-        </p>
-        <a
-          href={data.content?.cta_href || '#arrivals'}
-          className="inline-flex mt-8 text-[11px] tracking-[0.18em] uppercase border border-paper/50 px-7 py-4 hover:bg-paper hover:text-ink transition-colors"
-        >
-          {data.content?.cta_label || 'Explore the Collection'}
-        </a>
+        {data.subtitle && (
+          <Reveal variant="fade" delay={150}>
+            <div className="eyebrow text-camel-soft mb-5">{data.subtitle}</div>
+          </Reveal>
+        )}
+        {data.title && (
+          <Reveal variant="rise" delay={250}>
+            <h1 className="font-display text-6xl md:text-[9rem] leading-none tracking-wide">{data.title}</h1>
+          </Reveal>
+        )}
+        <Reveal variant="fade" delay={420}>
+          <p className="text-sm max-w-md mt-5 text-paper/80 leading-relaxed">
+            {data.content?.body || 'Linen and cotton, cut for movement and refined ease.'}
+          </p>
+        </Reveal>
+        <Reveal variant="fade" delay={540}>
+          <a
+            href={data.content?.cta_href || '#arrivals'}
+            className="inline-flex mt-8 text-[11px] tracking-[0.18em] uppercase border border-paper/50 px-7 py-4 hover:bg-paper hover:text-ink transition-colors duration-500"
+          >
+            {data.content?.cta_label || 'Explore the Collection'}
+          </a>
+        </Reveal>
       </div>
     </section>
   );
 }
 
-// ── OG featured spread: image left, text vertically centered right. ────────
+// ── Featured spread: the OG image-left/text-right bones, with the editorial
+//    layering restored — the photograph bleeds toward the viewport edge and a
+//    flat smoke panel sits offset behind it, so the section reads as a
+//    magazine spread rather than two stacked columns. The panel and bleed
+//    only apply from md up; mobile stays a clean single column. ─────────────
 function FeaturedCollection({ data }) {
   return (
-    <section className="py-32 md:py-40 px-6 md:px-14 grid md:grid-cols-2 gap-0 items-stretch">
-      <div className="aspect-[4/5]">
-        <ImageSlot src={data.image_url} alt={data.title || ''} tone="stone" sizes="(max-width: 768px) 100vw, 50vw" />
+    <section className="py-32 md:py-40 px-6 md:px-14 grid md:grid-cols-2 gap-0 items-start overflow-x-clip">
+      <div className="relative md:-ml-14">
+        <div className="hidden md:block absolute top-10 -right-10 -bottom-8 left-12 bg-smoke" aria-hidden="true" />
+        <Reveal variant="mask" className="group relative aspect-[4/5] overflow-hidden">
+          <div className="w-full h-full img-hover">
+            <ImageSlot src={data.image_url} alt={data.title || ''} tone="stone" sizes="(max-width: 768px) 100vw, 50vw" />
+          </div>
+        </Reveal>
       </div>
-      <div className="flex flex-col justify-center md:pl-16 pt-10 md:pt-0">
-        <div className="eyebrow text-camel mb-4">{data.subtitle || 'Featured Collection'}</div>
-        {data.title && <h2 className="font-display text-4xl md:text-5xl leading-tight">{data.title}</h2>}
-        {data.content?.body && <p className="text-[15px] text-ink/70 mt-6 max-w-sm leading-relaxed">{data.content.body}</p>}
+      <div className="flex flex-col justify-center md:pl-16 pt-12 md:pt-10">
+        <Reveal variant="fade">
+          <div className="eyebrow text-camel mb-4">{data.subtitle || 'Featured Collection'}</div>
+        </Reveal>
+        {data.title && (
+          <Reveal variant="rise" delay={120}>
+            <h2 className="font-display text-4xl md:text-5xl leading-tight">{data.title}</h2>
+          </Reveal>
+        )}
+        {data.content?.body && (
+          <Reveal variant="fade" delay={240}>
+            <p className="text-[15px] text-ink/70 mt-6 max-w-sm leading-relaxed">{data.content.body}</p>
+          </Reveal>
+        )}
         {data.content?.cta_label && (
-          <Link
-            to={data.content.cta_href || '/collections'}
-            className="inline-flex self-start mt-8 text-[11px] tracking-[0.16em] uppercase border-b border-ink pb-1"
-          >
-            {data.content.cta_label}
-          </Link>
+          <Reveal variant="fade" delay={340}>
+            <Link
+              to={data.content.cta_href || '/collections'}
+              className="link-underline inline-flex self-start mt-8 text-[11px] tracking-[0.16em] uppercase pb-1"
+            >
+              {data.content.cta_label}
+            </Link>
+          </Reveal>
         )}
       </div>
     </section>
@@ -136,13 +178,13 @@ function FeaturedCollection({ data }) {
 function ProductRow({ data, id, products, loading, whatsapp }) {
   return (
     <section id={id} className="px-6 md:px-14 pb-32">
-      <div className="flex justify-between items-end mb-14 flex-wrap gap-6">
+      <Reveal variant="rise" className="flex justify-between items-end mb-14 flex-wrap gap-6">
         <div>
           <div className="eyebrow text-camel mb-3">{data?.subtitle || 'Everyday Linen'}</div>
           <h2 className="font-display text-4xl">{data?.title || "This week's pieces"}</h2>
         </div>
-        <Link to="/collections" className="text-[11px] tracking-[0.16em] uppercase border-b border-ink pb-1">View all</Link>
-      </div>
+        <Link to="/collections" className="link-underline text-[11px] tracking-[0.16em] uppercase pb-1">View all</Link>
+      </Reveal>
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-9">
           {Array.from({ length: 4 }).map((_, i) => <div key={i} className="aspect-[3/4] skeleton" />)}
@@ -151,20 +193,38 @@ function ProductRow({ data, id, products, loading, whatsapp }) {
         <p className="text-ink/50 text-sm">No published products yet — add some in the admin dashboard.</p>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-9">
-          {products.map((p) => <ProductCard key={p.id} product={p} whatsappNumber={whatsapp} />)}
+          {products.map((p, i) => (
+            <Reveal key={p.id} variant="rise" delay={(i % 4) * 90}>
+              <ProductCard product={p} whatsappNumber={whatsapp} />
+            </Reveal>
+          ))}
         </div>
       )}
     </section>
   );
 }
 
-// ── OG philosophy: quiet centered statement on the paper ground. ───────────
+// ── Philosophy: the quiet centered statement, set on a full-width ink band so
+//    the page alternates dark → light → dark and closes into the olive footer
+//    without a wall of paper. ────────────────────────────────────────────────
 function Philosophy({ data }) {
   return (
-    <section className="text-center max-w-3xl mx-auto px-6 py-32">
-      <div className="eyebrow text-camel mb-6">{data.subtitle || 'Brand Philosophy'}</div>
-      {data.title && <h2 className="font-display text-3xl md:text-5xl leading-snug">{data.title}</h2>}
-      {data.content?.body && <p className="text-[15px] text-ink/70 mt-6 leading-relaxed">{data.content.body}</p>}
+    <section className="bg-ink text-paper">
+      <div className="text-center max-w-3xl mx-auto px-6 py-32 md:py-40">
+        <Reveal variant="fade">
+          <div className="eyebrow text-camel-soft mb-6">{data.subtitle || 'Brand Philosophy'}</div>
+        </Reveal>
+        {data.title && (
+          <Reveal variant="rise" delay={140}>
+            <h2 className="font-display text-3xl md:text-5xl leading-snug">{data.title}</h2>
+          </Reveal>
+        )}
+        {data.content?.body && (
+          <Reveal variant="fade" delay={280}>
+            <p className="text-[15px] text-paper/70 mt-6 leading-loose max-w-xl mx-auto">{data.content.body}</p>
+          </Reveal>
+        )}
+      </div>
     </section>
   );
 }

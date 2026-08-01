@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { Search, Heart, Menu, X } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { getWishlist, subscribeWishlist } from '../lib/wishlist';
@@ -16,6 +16,7 @@ const LINKS = [
 
 export default function Nav() {
   const { brand } = useSettings();
+  const { pathname } = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [wishlistCount, setWishlistCount] = useState(0);
@@ -36,7 +37,12 @@ export default function Nav() {
     return () => { document.body.style.overflow = ''; };
   }, [menuOpen]);
 
-  const dark = scrolled || menuOpen;
+  // The transparent, paper-text treatment only makes sense floating over the
+  // home hero's photography. Every other page opens on a light ground, where
+  // paper-on-paper text was unreadable — those pages get the solid nav from
+  // the first pixel of scroll.
+  const overHero = pathname === '/';
+  const dark = scrolled || menuOpen || !overHero;
   const brandName = brand.name || 'ALIÈ';
 
   return (
