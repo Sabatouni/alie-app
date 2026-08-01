@@ -40,6 +40,27 @@ html { scroll-behavior: smooth; }
 }
 .reveal-mask.is-shown { clip-path: inset(0 0 0 0); }
 
+/* Hero campaign rotation — a near-invisible crossfade between Media Library
+   images with an almost imperceptible drift on the visible frame. Opacity and
+   transform only; no controls, no slides. */
+.hero-layer {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1.6s var(--ease-editorial);
+}
+.hero-layer.is-active { opacity: 1; }
+@keyframes heroDrift {
+  from { transform: scale(1) translate3d(0, 0, 0); }
+  to   { transform: scale(1.035) translate3d(0, -6px, 0); }
+}
+.hero-drift { animation: heroDrift 8s linear forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-layer { opacity: 1; }
+  .hero-drift { animation: none !important; }
+}
+
 /* Navigation underline — grows from the left on hover, stays for the
    active route. 1px, currentColor, nothing flashy. */
 .nav-link { position: relative; }

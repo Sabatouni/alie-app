@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useSettings } from '../context/SettingsContext';
 import ProductCard from '../components/ProductCard';
 import ImageSlot from '../components/ImageSlot';
+import HeroSlideshow from '../components/HeroSlideshow';
 import CountdownBlock from '../components/CountdownBlock';
 import { setMeta } from '../lib/seo';
 
@@ -80,12 +81,14 @@ export default function Home() {
 }
 
 // ── OG hero: cinematic, bottom-anchored, photography (or the deep duotone
-//    field) filling the viewport with a soft ink gradient. ─────────────────
+//    field) filling the viewport with a soft ink gradient. The imagery is the
+//    original rotating campaign system: newest Media Library uploads crossfade
+//    behind the masthead automatically. ──────────────────────────────────────
 function Hero({ data }) {
   return (
     <section className="relative h-screen min-h-[700px] flex flex-col justify-end overflow-hidden">
       <div className="absolute inset-0">
-        <ImageSlot src={data.image_url} alt={data.title || ''} tone="sand" sizes="100vw" priority />
+        <HeroSlideshow primaryUrl={data.image_url} alt={data.title || ''} />
       </div>
       <div className="absolute inset-0 bg-gradient-to-b from-ink/15 to-ink/75" />
       <div className="relative z-10 px-6 md:px-14 pb-24 text-paper">
