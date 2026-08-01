@@ -40,24 +40,6 @@ html { scroll-behavior: smooth; }
 }
 .reveal-mask.is-shown { clip-path: inset(0 0 0 0); }
 
-/* Floating editorial imagery — luxury magazine pages layered in space.
-   Movement is a few pixels over tens of seconds; opacity barely breathes. */
-@keyframes floatSlow {
-  0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.96; }
-  50%      { transform: translate3d(0, -9px, 0); opacity: 1; }
-}
-@keyframes floatSlower {
-  0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.94; }
-  50%      { transform: translate3d(3px, -6px, 0); opacity: 1; }
-}
-@keyframes floatDrift {
-  0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.95; }
-  50%      { transform: translate3d(-4px, -11px, 0); opacity: 1; }
-}
-.float-slow   { animation: floatSlow 16s ease-in-out infinite; }
-.float-slower { animation: floatSlower 21s ease-in-out infinite; }
-.float-drift  { animation: floatDrift 26s ease-in-out infinite; }
-
 /* Navigation underline — grows from the left on hover, stays for the
    active route. 1px, currentColor, nothing flashy. */
 .nav-link { position: relative; }
@@ -198,5 +180,4 @@ html { scroll-behavior: smooth; }
     transform: none !important;
     clip-path: none !important;
   }
-  .float-slow, .float-slower, .float-drift { animation: none !important; }
 }
