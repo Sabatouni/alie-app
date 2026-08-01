@@ -133,36 +133,50 @@ export default function OrderPanel({ product, whatsappNumber, size: sizeClass = 
         </div>
       )}
 
-      <div className={`flex items-center gap-2.5 ${large ? 'mt-8' : 'mt-4'}`}>
-        <div className="flex items-center border border-ink/20">
-          <button
-            aria-label="Decrease quantity"
-            className={`text-sm hover:bg-ink/5 transition-colors disabled:opacity-30 ${large ? 'w-9 h-11' : 'w-7 h-8'}`}
-            onClick={() => setQty((q) => Math.max(1, q - 1))}
-            disabled={qty <= 1}
-          >
-            −
-          </button>
-          <span className={`text-center tabular-nums ${large ? 'w-8 text-sm' : 'w-6 text-xs'}`}>{qty}</span>
-          <button
-            aria-label="Increase quantity"
-            className={`text-sm hover:bg-ink/5 transition-colors disabled:opacity-30 ${large ? 'w-9 h-11' : 'w-7 h-8'}`}
-            onClick={() => setQty((q) => Math.min(9, q + 1))}
-            disabled={qty >= 9}
-          >
-            +
-          </button>
-        </div>
-        <button
-          onClick={orderViaWhatsApp}
-          disabled={submitting || outOfStock}
-          className={`flex-1 tracking-[0.1em] uppercase border border-ink text-center transition-colors duration-300 hover:bg-ink hover:text-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper disabled:opacity-50 disabled:pointer-events-none ${
-            large ? 'text-[11px] py-3.5' : 'text-[10px] py-2.5'
+      {/* An unavailable piece shows a quiet status line, not a dead button —
+          there is nothing to click, so nothing should look clickable. The
+          quantity stepper disappears with it. */}
+      {outOfStock ? (
+        <div
+          role="status"
+          className={`tracking-[0.1em] uppercase text-center text-ink/45 border border-ink/15 ${
+            large ? 'mt-8 text-[11px] py-3.5' : 'mt-4 text-[10px] py-2.5'
           }`}
         >
-          {outOfStock ? 'Out of Stock' : submitting ? 'Starting Order…' : 'Order via WhatsApp'}
-        </button>
-      </div>
+          Out of Stock
+        </div>
+      ) : (
+        <div className={`flex items-center gap-2.5 ${large ? 'mt-8' : 'mt-4'}`}>
+          <div className="flex items-center border border-ink/20">
+            <button
+              aria-label="Decrease quantity"
+              className={`text-sm hover:bg-ink/5 transition-colors disabled:opacity-30 ${large ? 'w-9 h-11' : 'w-7 h-8'}`}
+              onClick={() => setQty((q) => Math.max(1, q - 1))}
+              disabled={qty <= 1}
+            >
+              −
+            </button>
+            <span className={`text-center tabular-nums ${large ? 'w-8 text-sm' : 'w-6 text-xs'}`}>{qty}</span>
+            <button
+              aria-label="Increase quantity"
+              className={`text-sm hover:bg-ink/5 transition-colors disabled:opacity-30 ${large ? 'w-9 h-11' : 'w-7 h-8'}`}
+              onClick={() => setQty((q) => Math.min(9, q + 1))}
+              disabled={qty >= 9}
+            >
+              +
+            </button>
+          </div>
+          <button
+            onClick={orderViaWhatsApp}
+            disabled={submitting}
+            className={`flex-1 tracking-[0.1em] uppercase border border-ink text-center transition-colors duration-300 hover:bg-ink hover:text-paper focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper disabled:opacity-50 disabled:pointer-events-none ${
+              large ? 'text-[11px] py-3.5' : 'text-[10px] py-2.5'
+            }`}
+          >
+            {submitting ? 'Starting Order…' : 'Order via WhatsApp'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
