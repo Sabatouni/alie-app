@@ -35,6 +35,7 @@ const Countdowns = lazy(() => import('./pages/admin/Countdowns'));
 const Media = lazy(() => import('./pages/admin/Media'));
 const Orders = lazy(() => import('./pages/admin/Orders'));
 const SiteSettings = lazy(() => import('./pages/admin/SiteSettings'));
+const Team = lazy(() => import('./pages/admin/Team'));
 
 function SiteLayout({ children }) {
   return (
@@ -94,6 +95,7 @@ export default function App() {
               <Route path="media" element={<Media />} />
               <Route path="orders" element={<Orders />} />
               <Route path="settings" element={<SiteSettings />} />
+              <Route path="team" element={<Team />} />
             </Route>
 
             {/* Catch-all. Without this, any unknown path rendered a blank page. */}
