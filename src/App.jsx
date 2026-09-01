@@ -18,6 +18,7 @@ import Events from './pages/Events';
 import CollaborationsPage from './pages/Collaborations';
 import Search from './pages/Search';
 import Wishlist from './pages/Wishlist';
+import TrackOrder from './pages/TrackOrder';
 import NotFound from './pages/NotFound';
 
 // Admin is a separate bundle. Nobody browsing the storefront should download
@@ -78,6 +79,7 @@ export default function App() {
             <Route path="/collaborations" element={<SiteLayout><CollaborationsPage /></SiteLayout>} />
             <Route path="/search" element={<SiteLayout><Search /></SiteLayout>} />
             <Route path="/wishlist" element={<SiteLayout><Wishlist /></SiteLayout>} />
+            <Route path="/track/:token" element={<SiteLayout><TrackOrder /></SiteLayout>} />
 
             <Route
               path="/admin/login"

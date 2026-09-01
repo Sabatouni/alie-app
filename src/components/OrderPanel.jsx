@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useToast } from '../context/ToastContext';
 import { formatMoney } from '../lib/currency';
@@ -9,10 +10,12 @@ import { formatMoney } from '../lib/currency';
 // embedded an entire ProductCard to get these controls, which meant a second
 // copy of the product image and title appeared below the accordion.
 //
-// Ordering is two steps: picking up the WhatsApp button opens the customer
-// details panel (name / WhatsApp / mobile / email); submitting *that* is the
-// actual order. The Supabase insert and the WhatsApp handoff only happen once
-// those four fields validate.
+// Ordering is three steps: the WhatsApp button opens the customer details
+// panel (name / WhatsApp / mobile / email); submitting that creates the order
+// and opens WhatsApp *to ALIÈ's business number* (whatsappNumber — never the
+// customer's own number, which only ever lives in the customer_* fields);
+// the panel then shows an order-received confirmation with a reference the
+// customer can track later without an account.
 
 // Accepts +255…, 0…, or any other reasonably-shaped international number —
 // deliberately loose so a real customer's number is never rejected, but tight
@@ -24,6 +27,25 @@ function isValidPhone(value) {
 
 function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+// Generated client-side rather than read back from the insert: `alie_orders`
+// has no anon SELECT policy (by design — customers can't read order data),
+// so a `.insert().select()` round-trip would fail. Computing both values up
+// front means the confirmation screen and the WhatsApp message always agree
+// with what's actually in the database, with no second request needed.
+function randomHex(byteLength) {
+  const bytes = new Uint8Array(byteLength);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function generateOrderNumber() {
+  const now = new Date();
+  const yy = String(now.getFullYear()).slice(-2);
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  return `ALIE-${yy}${mm}${dd}-${randomHex(3)}`;
 }
 
 const EMPTY_CUSTOMER = { name: '', whatsapp: '', mobile: '', email: '' };
@@ -46,6 +68,7 @@ export default function OrderPanel({ product, whatsappNumber, size: sizeClass = 
   const [showDetails, setShowDetails] = useState(false);
   const [customer, setCustomer] = useState(EMPTY_CUSTOMER);
   const [errors, setErrors] = useState({});
+  const [confirmation, setConfirmation] = useState(null); // { orderNumber, trackingToken, whatsappUrl }
 
   useEffect(() => {
     if (size && !sizesForColor.includes(size)) setSize(sizesForColor[0] || null);
@@ -71,6 +94,7 @@ export default function OrderPanel({ product, whatsappNumber, size: sizeClass = 
       return;
     }
     setErrors({});
+    setConfirmation(null);
     setShowDetails(true);
   }
 
@@ -115,22 +139,33 @@ export default function OrderPanel({ product, whatsappNumber, size: sizeClass = 
     const email = customer.email.trim().toLowerCase();
     const unitPrice = Number(product.price);
     const subtotal = unitPrice * qty;
+    const orderNumber = generateOrderNumber();
+    const trackingToken = randomHex(16);
 
     const message =
       `ALIÈ — ORDER REQUEST\n\n` +
-      `Customer:\n${name}\n\n` +
-      `WhatsApp:\n${whatsapp}\n\n` +
-      `Mobile:\n${mobile}\n\n` +
-      `Email:\n${email}\n\n` +
-      `Product:\n${product.name}\n\n` +
-      `${color ? `Colour:\n${color}\n\n` : ''}` +
-      `${size ? `Size:\n${size}\n\n` : ''}` +
-      `Quantity:\n${qty}\n\n` +
-      `Unit Price:\n${formatMoney(unitPrice, 'TZS')}\n\n` +
-      `Total:\n${formatMoney(subtotal, 'TZS')}\n\n` +
+      `ORDER\n----------------\n` +
+      `Product: ${product.name}\n` +
+      `${color ? `Colour: ${color}\n` : ''}` +
+      `${size ? `Size: ${size}\n` : ''}` +
+      `Quantity: ${qty}\n` +
+      `Unit Price: ${formatMoney(unitPrice, 'TZS')}\n` +
+      `Total: ${formatMoney(subtotal, 'TZS')}\n\n` +
+      `CUSTOMER\n----------------\n` +
+      `Name: ${name}\n` +
+      `WhatsApp: ${whatsapp}\n` +
+      `Mobile: ${mobile}\n` +
+      `Email: ${email}\n\n` +
+      `ORDER STATUS\n----------------\n` +
+      `Pending\n\n` +
       `Please confirm availability and next steps.`;
 
+    // The order is only ever "received", never "confirmed" — status starts
+    // pending and only an admin moves it forward, so the WhatsApp message
+    // above says Pending regardless of anything the customer sees next.
     const { error } = await supabase.from('alie_orders').insert({
+      order_number: orderNumber,
+      tracking_token: trackingToken,
       customer_name: name,
       customer_whatsapp: whatsapp,
       customer_mobile: mobile,
@@ -151,15 +186,24 @@ export default function OrderPanel({ product, whatsappNumber, size: sizeClass = 
       if (tab && !tab.closed) tab.close();
       // Keep the panel open with everything the customer already typed —
       // they shouldn't have to retype four fields because of a network blip.
+      // And don't show a confirmation screen: the order was NOT received.
       toast?.error("Couldn't start the order — try again.");
       return;
     }
 
-    const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
-    if (tab && !tab.closed) tab.location.href = url;
-    else window.location.href = url; // popup blocked: don't drop the customer
+    // whatsappNumber is ALIÈ's own business number (SettingsContext →
+    // brand.whatsapp_number, from alie_site_settings) — the destination is
+    // never the customer's own number, which is only ever in the fields above.
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+    if (tab && !tab.closed) tab.location.href = whatsappUrl;
+    else window.location.href = whatsappUrl; // popup blocked: don't drop the customer
 
+    setConfirmation({ orderNumber, trackingToken, whatsappUrl, name });
+  }
+
+  function closeConfirmation() {
     setShowDetails(false);
+    setConfirmation(null);
     setCustomer(EMPTY_CUSTOMER);
   }
 
@@ -270,9 +314,62 @@ export default function OrderPanel({ product, whatsappNumber, size: sizeClass = 
         >
           <button
             aria-label="Close"
-            onClick={() => !submitting && setShowDetails(false)}
+            onClick={() => !submitting && (confirmation ? closeConfirmation() : setShowDetails(false))}
             className="absolute inset-0 bg-ink/40"
           />
+          {confirmation ? (
+            <div className="relative bg-paper w-full sm:max-w-sm max-h-[92vh] overflow-y-auto p-6 sm:p-7 border-t sm:border border-ink/10 animate-[fadeIn_0.25s_ease]">
+              <div className="flex items-start justify-between mb-4">
+                <h2 className="font-display text-xl">✓ Order Received</h2>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  onClick={closeConfirmation}
+                  className="text-ink/40 hover:text-ink transition-colors text-lg leading-none p-1 -mr-1 -mt-1"
+                >
+                  ×
+                </button>
+              </div>
+
+              <p className="text-sm text-ink/70">
+                Thank you, {confirmation.name.split(' ')[0]}. Your order has been received.
+              </p>
+
+              <div className="mt-6 border border-ink/10 p-4">
+                <div className="field-label">Order Reference</div>
+                <div className="font-mono text-sm tracking-wide">{confirmation.orderNumber}</div>
+                <div className="field-label mt-4">Status</div>
+                <div className="text-sm uppercase tracking-[0.08em]">Pending</div>
+              </div>
+
+              <p className="text-xs text-ink/50 mt-4">
+                We'll contact you on WhatsApp once your order has been reviewed. A WhatsApp message
+                to ALIÈ should have opened in a new tab with your order details.
+              </p>
+
+              <a
+                href={confirmation.whatsappUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-link block text-center mt-4 text-xs"
+              >
+                WhatsApp didn't open? Contact us
+              </a>
+
+              <div className="flex gap-3 mt-6">
+                <button type="button" onClick={closeConfirmation} className="btn-primary flex-1">
+                  Continue Shopping
+                </button>
+                <Link
+                  to={`/track/${confirmation.trackingToken}`}
+                  onClick={closeConfirmation}
+                  className="flex-1 flex items-center justify-center border border-ink/20 text-[11px] tracking-[0.08em] uppercase hover:border-ink transition-colors"
+                >
+                  Track Order
+                </Link>
+              </div>
+            </div>
+          ) : (
           <form
             onSubmit={submitOrder}
             noValidate
@@ -334,6 +431,7 @@ export default function OrderPanel({ product, whatsappNumber, size: sizeClass = 
               {submitting ? 'Starting Order…' : 'Continue to WhatsApp'}
             </button>
           </form>
+          )}
         </div>
       )}
     </div>
