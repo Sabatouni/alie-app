@@ -11,6 +11,7 @@ import Reveal from '../components/Reveal';
 import { galleryProductImages } from '../lib/productImages';
 import { isWishlisted, toggleWishlist } from '../lib/wishlist';
 import { setMeta } from '../lib/seo';
+import { formatMoney } from '../lib/currency';
 
 const SELECT = '*, product_images:alie_product_images(*), product_variants:alie_product_variants(*), collections:alie_collections(id,name,slug)';
 
@@ -160,8 +161,8 @@ export default function ProductDetail() {
           </div>
 
           <div className="text-lg mt-3 text-ink/70 flex items-center gap-3 tabular-nums">
-            <span>${product.price}</span>
-            {onSale && <span className="text-base line-through text-ink/35">${product.compare_at_price}</span>}
+            <span>{formatMoney(product.price, product.currency)}</span>
+            {onSale && <span className="text-base line-through text-ink/35">{formatMoney(product.compare_at_price, product.currency)}</span>}
           </div>
 
           {product.story && <p className="text-[15px] leading-relaxed text-ink/70 mt-6 max-w-md">{product.story}</p>}

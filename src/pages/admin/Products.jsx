@@ -4,6 +4,7 @@ import { useToast } from '../../context/ToastContext';
 import ProductImagesPanel from '../../components/admin/ProductImagesPanel';
 import ProductVariantsPanel from '../../components/admin/ProductVariantsPanel';
 import { removeIfUnreferenced } from '../../lib/mediaUpload';
+import { formatMoney } from '../../lib/currency';
 
 // Every column on alie_products is editable here. Before this pass the form
 // covered eight of them, so description, story, care instructions, collection
@@ -215,10 +216,10 @@ export default function AdminProducts() {
                 {collections.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
-            <Field label="Price (USD)" type="number" min="0.01" step="0.01" value={form.price} onChange={set('price')} required />
+            <Field label="Price (TZS)" type="number" min="1" step="1" value={form.price} onChange={set('price')} required />
             <Field
-              label="Compare-at Price (USD)"
-              type="number" min="0" step="0.01"
+              label="Compare-at Price (TZS)"
+              type="number" min="0" step="1"
               value={form.compare_at_price}
               onChange={set('compare_at_price')}
               hint="Optional. The struck-through 'was' price."
@@ -345,7 +346,7 @@ export default function AdminProducts() {
                 </td>
                 <td className="text-ink/70">{p.category}</td>
                 <td className="text-ink/70">{collections.find((c) => c.id === p.collection_id)?.name || '—'}</td>
-                <td className="tabular-nums">${p.price}</td>
+                <td className="tabular-nums">{formatMoney(p.price, p.currency)}</td>
                 <td><span className={`badge-pill ${STATUS_STYLE[p.status]}`}>{p.status}</span></td>
                 <td className="text-right space-x-4">
                   <button onClick={() => handleEdit(p)} className="btn-link">Edit</button>

@@ -23,7 +23,9 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="fixed bottom-6 right-6 z-[999] flex flex-col gap-2 items-end">
+      {/* Above OrderPanel's details modal (z-[1000]) so a failed-order error
+          is never visually trapped behind the overlay. */}
+      <div className="fixed bottom-6 right-6 z-[1100] flex flex-col gap-2 items-end">
         {toasts.map((t) => (
           <div
             key={t.id}

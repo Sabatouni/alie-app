@@ -5,6 +5,7 @@ import ImageSlot from './ImageSlot';
 import OrderPanel from './OrderPanel';
 import { primaryProductImage } from '../lib/productImages';
 import { isWishlisted, toggleWishlist } from '../lib/wishlist';
+import { formatMoney } from '../lib/currency';
 
 export default function ProductCard({ product, whatsappNumber }) {
   const [wishlisted, setWishlisted] = useState(false);
@@ -48,8 +49,8 @@ export default function ProductCard({ product, whatsappNumber }) {
           <h3 className="font-display text-lg mt-1 hover:text-camel transition-colors duration-300">{product.name}</h3>
         </Link>
         <div className="text-sm text-ink/60 mt-1 tabular-nums flex items-center gap-2">
-          <span>${product.price}</span>
-          {onSale && <span className="line-through text-ink/35">${product.compare_at_price}</span>}
+          <span>{formatMoney(product.price, product.currency)}</span>
+          {onSale && <span className="line-through text-ink/35">{formatMoney(product.compare_at_price, product.currency)}</span>}
         </div>
 
         <OrderPanel product={product} whatsappNumber={whatsappNumber} />

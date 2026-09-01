@@ -1,6 +1,12 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { useToast } from '../../context/ToastContext';
+import { formatMoney } from '../../lib/currency';
+
+// wa.me wants digits only (no +, spaces, dashes).
+function waLink(number) {
+  return `https://wa.me/${number.replace(/[^0-9]/g, '')}`;
+}
 
 const STATUSES = ['pending', 'contacted', 'completed', 'cancelled'];
 
@@ -42,27 +48,39 @@ export default function Orders() {
       .filter((r) => !q
         || r.order_number?.toLowerCase().includes(q)
         || r.customer_name?.toLowerCase().includes(q)
-        || r.customer_phone?.toLowerCase().includes(q)
+        || r.customer_whatsapp?.toLowerCase().includes(q)
+        || r.customer_mobile?.toLowerCase().includes(q)
+        || r.customer_email?.toLowerCase().includes(q)
         || (r.items || []).some((it) => it.name?.toLowerCase().includes(q)));
   }, [rows, filter, search]);
 
-  const revenue = filtered.reduce((sum, r) => sum + Number(r.subtotal || 0), 0);
+  // Orders before the TZS migration are legitimately USD — summing raw
+  // numbers across currencies would produce a number that means nothing, so
+  // each currency gets its own subtotal in the summary line instead.
+  const revenueByCurrency = useMemo(() => filtered.reduce((acc, r) => {
+    const cur = r.currency || 'TZS';
+    acc[cur] = (acc[cur] || 0) + Number(r.subtotal || 0);
+    return acc;
+  }, {}), [filtered]);
 
   function exportCsv() {
     if (filtered.length === 0) { toast.error('Nothing to export with the current filter.'); return; }
 
     // One row per line item rather than a JSON blob in a cell — the old export
     // dumped the whole items array as escaped JSON, which is unusable in Excel.
-    const header = ['Order Number', 'Date', 'Status', 'Customer', 'Phone', 'Product', 'Colour', 'Size', 'Qty', 'Unit Price', 'Order Subtotal'];
+    const header = [
+      'Order Number', 'Date', 'Status', 'Customer', 'WhatsApp', 'Mobile', 'Email',
+      'Product', 'Colour', 'Size', 'Qty', 'Unit Price', 'Currency', 'Order Subtotal',
+    ];
     const lines = [];
     for (const r of filtered) {
       const items = (r.items || []).length ? r.items : [{}];
       for (const it of items) {
         lines.push([
           r.order_number, new Date(r.created_at).toISOString(), r.status,
-          r.customer_name || '', r.customer_phone || '',
+          r.customer_name || '', r.customer_whatsapp || '', r.customer_mobile || '', r.customer_email || '',
           it.name || '', it.color || '', it.size || '', it.quantity ?? '',
-          it.price ?? '', r.subtotal ?? '',
+          it.price ?? '', r.currency || 'TZS', r.subtotal ?? '',
         ].map(csvCell).join(','));
       }
     }
@@ -112,7 +130,8 @@ export default function Orders() {
           ))}
         </div>
         <span className="text-xs text-ink/45 tabular-nums ml-auto">
-          {filtered.length} {filtered.length === 1 ? 'order' : 'orders'} · ${revenue.toFixed(2)}
+          {filtered.length} {filtered.length === 1 ? 'order' : 'orders'} ·{' '}
+          {Object.entries(revenueByCurrency).map(([cur, amt]) => formatMoney(amt, cur)).join(' + ') || formatMoney(0, 'TZS')}
         </span>
       </div>
 
@@ -125,67 +144,93 @@ export default function Orders() {
           {rows.length === 0 ? 'No orders yet — they appear here the moment a customer checks out via WhatsApp.' : 'No orders match this search or filter.'}
         </div>
       ) : (
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="table-head-row">
-              <th className="py-3">Order</th><th>Items</th><th>Subtotal</th><th>Status</th><th>Date</th><th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((r) => (
-              <Fragment key={r.id}>
-                <tr className="table-row align-top">
-                  <td className="py-3 font-mono text-xs">{r.order_number}</td>
-                  <td className="text-xs max-w-xs">
-                    {(r.items || []).map((it, i) => (
-                      <div key={i}>
-                        {it.name}
-                        {(it.color || it.size) && <span className="text-ink/50"> — {[it.color, it.size].filter(Boolean).join(' / ')}</span>}
-                        <span className="text-ink/50"> × {it.quantity}</span>
-                      </div>
-                    ))}
-                  </td>
-                  <td className="tabular-nums">${r.subtotal}</td>
-                  <td>
-                    <select
-                      value={r.status}
-                      onChange={(e) => setStatus(r.id, e.target.value)}
-                      aria-label={`Status for ${r.order_number}`}
-                      className="border border-ink/20 px-2 py-1.5 text-xs bg-transparent capitalize focus:outline-none focus:border-ink transition-colors"
-                    >
-                      {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </td>
-                  <td className="text-xs text-ink/50 whitespace-nowrap">{new Date(r.created_at).toLocaleDateString()}</td>
-                  <td className="text-right">
-                    <button onClick={() => setExpanded(expanded === r.id ? null : r.id)} className="btn-link">
-                      {expanded === r.id ? 'Hide' : 'Notes'}
-                    </button>
-                  </td>
-                </tr>
-                {expanded === r.id && (
-                  <tr className="border-b border-ink/5">
-                    <td colSpan={6} className="py-4 bg-paper/50 px-3">
-                      <label className="field-label">Internal Notes</label>
-                      <textarea
-                        defaultValue={r.notes || ''}
-                        onBlur={(e) => { if (e.target.value !== (r.notes || '')) updateNotes(r.id, e.target.value); }}
-                        rows={2}
-                        className="field-input"
-                      />
-                      {r.whatsapp_message && (
-                        <>
-                          <div className="field-label mt-4">Message Sent</div>
-                          <pre className="text-xs text-ink/60 whitespace-pre-wrap font-body">{r.whatsapp_message}</pre>
-                        </>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="table-head-row">
+                <th className="py-3">Order</th><th>Customer</th><th>Contact</th><th>Items</th>
+                <th>Total</th><th>Status</th><th>Date</th><th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((r) => (
+                <Fragment key={r.id}>
+                  <tr className="table-row align-top">
+                    <td className="py-3 font-mono text-xs whitespace-nowrap">{r.order_number}</td>
+                    <td className="text-xs max-w-[10rem]">{r.customer_name || <span className="text-ink/35">—</span>}</td>
+                    <td className="text-xs whitespace-nowrap space-y-0.5">
+                      {r.customer_whatsapp && (
+                        <div>
+                          <a href={waLink(r.customer_whatsapp)} target="_blank" rel="noreferrer" className="btn-link">
+                            {r.customer_whatsapp}
+                          </a>
+                        </div>
+                      )}
+                      {r.customer_mobile && (
+                        <div>
+                          <a href={`tel:${r.customer_mobile}`} className="btn-link">{r.customer_mobile}</a>
+                        </div>
+                      )}
+                      {r.customer_email && (
+                        <div>
+                          <a href={`mailto:${r.customer_email}`} className="btn-link">{r.customer_email}</a>
+                        </div>
+                      )}
+                      {!r.customer_whatsapp && !r.customer_mobile && !r.customer_email && (
+                        <span className="text-ink/35">— pre-TZS order —</span>
                       )}
                     </td>
+                    <td className="text-xs max-w-xs">
+                      {(r.items || []).map((it, i) => (
+                        <div key={i}>
+                          {it.name}
+                          {(it.color || it.size) && <span className="text-ink/50"> — {[it.color, it.size].filter(Boolean).join(' / ')}</span>}
+                          <span className="text-ink/50"> × {it.quantity}</span>
+                        </div>
+                      ))}
+                    </td>
+                    <td className="tabular-nums whitespace-nowrap">{formatMoney(r.subtotal, r.currency)}</td>
+                    <td>
+                      <select
+                        value={r.status}
+                        onChange={(e) => setStatus(r.id, e.target.value)}
+                        aria-label={`Status for ${r.order_number}`}
+                        className="border border-ink/20 px-2 py-1.5 text-xs bg-transparent capitalize focus:outline-none focus:border-ink transition-colors"
+                      >
+                        {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </td>
+                    <td className="text-xs text-ink/50 whitespace-nowrap">{new Date(r.created_at).toLocaleDateString()}</td>
+                    <td className="text-right">
+                      <button onClick={() => setExpanded(expanded === r.id ? null : r.id)} className="btn-link">
+                        {expanded === r.id ? 'Hide' : 'Notes'}
+                      </button>
+                    </td>
                   </tr>
-                )}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
+                  {expanded === r.id && (
+                    <tr className="border-b border-ink/5">
+                      <td colSpan={8} className="py-4 bg-paper/50 px-3">
+                        <label className="field-label">Internal Notes</label>
+                        <textarea
+                          defaultValue={r.notes || ''}
+                          onBlur={(e) => { if (e.target.value !== (r.notes || '')) updateNotes(r.id, e.target.value); }}
+                          rows={2}
+                          className="field-input"
+                        />
+                        {r.whatsapp_message && (
+                          <>
+                            <div className="field-label mt-4">Message Sent</div>
+                            <pre className="text-xs text-ink/60 whitespace-pre-wrap font-body">{r.whatsapp_message}</pre>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
